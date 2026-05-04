@@ -1,0 +1,7 @@
+{
+  "source": "http://localhost:10014/wp-json/tmd/v3/events?per_page=2&include_relationships=true&future=1",
+  "captured_at": "2026-05-01",
+  "status": null,
+  "error": "fetch failed",
+  "note": "The local WordPress/TMD Core environment was not reachable from this workspace when fixtures were captured. Re-capture this fixture once Docker/WordPress is running on localhost:10014."
+}

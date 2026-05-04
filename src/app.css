@@ -1,0 +1,120 @@
+@import '@fontsource/atkinson-hyperlegible-next/400.css';
+@import '@fontsource/atkinson-hyperlegible-next/500.css';
+@import '@fontsource/atkinson-hyperlegible-next/600.css';
+@import '@fontsource/ibm-plex-sans-condensed/600.css';
+@import '@fontsource/ibm-plex-sans-condensed/700.css';
+
+@import 'tailwindcss';
+
+:root {
+	--ink: 11 25 28;
+	--pine: 11 59 63;
+	--wine: 121 30 48;
+	--gold: 209 150 61;
+	--paper: 246 242 233;
+	--shell: 255 252 246;
+	--mist: 226 232 223;
+	--line: 205 198 181;
+	--muted: 92 104 101;
+}
+
+@theme {
+	--color-canvas: rgb(var(--paper));
+	--color-panel: rgb(var(--shell));
+	--color-soft: rgb(var(--mist));
+	--color-ink: rgb(var(--ink));
+	--color-muted: rgb(var(--muted));
+	--color-primary: rgb(var(--pine));
+	--color-accent: rgb(var(--wine));
+	--color-warm: rgb(var(--gold));
+	--color-line: rgb(var(--line));
+	--font-sans: 'Atkinson Hyperlegible Next', sans-serif;
+	--font-display: 'IBM Plex Sans Condensed', 'Atkinson Hyperlegible Next', sans-serif;
+	--radius-panel: 0.5rem;
+	--radius-control: 0.5rem;
+	--shadow-panel: 0 1px 0 rgb(11 25 28 / 0.08), 0 14px 40px rgb(11 25 28 / 0.08);
+}
+
+* {
+	box-sizing: border-box;
+	-webkit-tap-highlight-color: transparent;
+}
+
+html {
+	background: rgb(var(--paper));
+	font-family: 'Atkinson Hyperlegible Next', sans-serif;
+	scroll-behavior: smooth;
+}
+
+body {
+	min-height: 100dvh;
+	margin: 0;
+	background: rgb(var(--paper));
+	color: rgb(var(--ink));
+	line-height: 1.55;
+}
+
+h1,
+h2,
+h3 {
+	font-family: 'IBM Plex Sans Condensed', 'Atkinson Hyperlegible Next', sans-serif;
+	line-height: 1.12;
+	letter-spacing: 0;
+}
+
+a {
+	color: inherit;
+}
+
+button,
+input,
+select {
+	font: inherit;
+}
+
+:focus-visible {
+	outline: 3px solid rgb(var(--gold) / 0.7);
+	outline-offset: 2px;
+}
+
+@layer components {
+	.app-shell {
+		@apply mx-auto flex min-h-screen w-full max-w-xl flex-col bg-canvas;
+	}
+
+	.panel {
+		@apply rounded-panel border border-line bg-panel shadow-panel;
+	}
+
+	.soft-panel {
+		@apply rounded-panel border border-line bg-soft;
+	}
+
+	.nav-link {
+		@apply inline-flex min-h-11 items-center justify-center rounded-control border px-3 py-2 text-sm font-semibold transition-colors;
+	}
+
+	.nav-link-active {
+		@apply border-primary bg-primary text-white;
+	}
+
+	.nav-link-idle {
+		@apply border-transparent text-muted hover:border-line hover:bg-panel hover:text-ink;
+	}
+
+	.button-primary {
+		@apply inline-flex min-h-12 items-center justify-center rounded-control bg-primary px-4 py-3 font-semibold text-white transition-colors hover:bg-accent;
+	}
+
+	.button-secondary {
+		@apply inline-flex min-h-12 items-center justify-center rounded-control border border-line bg-panel px-4 py-3 font-semibold text-ink transition-colors hover:bg-soft;
+	}
+
+	.eyebrow {
+		@apply text-sm font-semibold uppercase text-muted;
+	}
+
+	.meta-text {
+		@apply text-sm text-muted;
+	}
+}

@@ -1,0 +1,8 @@
+version: 1
+ide: vscode
+prompt_sources:
+- nold-ai/specfact-backlog
+- nold-ai/specfact-codebase
+- nold-ai/specfact-govern
+- nold-ai/specfact-project
+- nold-ai/specfact-spec

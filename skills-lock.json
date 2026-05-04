@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "openspec": {
+      "source": "itechmeat/llm-code",
+      "sourceType": "github",
+      "computedHash": "7cdd2add2698a326eb5b04fa8b481b5a0f825e3652c956a3987bd94bf0ff05cd"
+    }
+  }
+}

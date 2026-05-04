@@ -1,0 +1,27 @@
+schema: spec-driven
+context: |
+  App: TMD Mobile
+  Stack: SvelteKit 2, Svelte 5, TypeScript, Tailwind CSS 4, adapter-static
+  Domain: Mobile-first PWA for The Tango Marathon Directory
+  Data source: TMD Core REST v3 at /wp-json/tmd/v3, with GraphQL as a later option
+  Parity reference: TMD4 WordPress Genesis child theme public browsing behavior
+  Architecture: routes in src/routes, API access in src/lib/api/tmd.ts, shared types in src/lib/types.ts
+  Deployment: static SvelteKit build served by Cloudflare Worker Assets service tmd-mobile
+  Domain note: mobile.tangomarathons.com is planned but not configured in Cloudflare yet
+rules:
+  proposal:
+    - State the user-visible outcome and affected routes or views.
+    - Note API, data-shape, relationship, CORS, and deployment implications.
+    - Mention whether a feature is public, authenticated, or admin-only.
+  specs:
+    - Describe loading, empty, error, offline, and direct-route behavior.
+    - Include mobile-first interaction behavior and accessibility expectations.
+    - Reference TMD4 parity where it exists.
+  design:
+    - Reference concrete routes, modules, and data contracts.
+    - Prefer TMD Core v3 REST first; introduce GraphQL only when it reduces overfetching or relationship complexity.
+    - Preserve static compatibility unless a proposal explicitly changes deployment architecture.
+  tasks:
+    - Keep tasks implementation-ready and file-scoped where possible.
+    - Include validation with npm run check and npm run build for route or deployment changes.
+    - Include API fixture validation when response normalization changes.

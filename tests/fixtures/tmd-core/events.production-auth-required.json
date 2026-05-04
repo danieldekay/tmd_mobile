@@ -1,0 +1,14 @@
+{
+  "source": "https://www.tangomarathons.com/wp-json/tmd/v3/events?per_page=2&include_relationships=true&future=1",
+  "captured_at": "2026-05-01",
+  "status": 401,
+  "content_type": "application/json; charset=UTF-8",
+  "body": {
+    "code": "rest_not_logged_in",
+    "message": "You must be logged in to access this resource.",
+    "data": {
+      "status": 401
+    }
+  },
+  "note": "Production TMD Core v3 events currently require authentication. Public mobile browsing needs either public read permission for published content or an authenticated/JWT data contract."
+}
