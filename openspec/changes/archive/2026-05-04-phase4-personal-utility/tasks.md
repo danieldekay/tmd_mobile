@@ -24,9 +24,9 @@
 ## 4. Offline Cache
 
 - [x] 4.1 Create `src/service-worker.ts` with cache strategy for the most recent events API response (1-hour TTL)
-- [ ] 4.2 Register the Service Worker in the SvelteKit app entry point
+- [x] 4.2 Register the Service Worker in the SvelteKit app entry point
 - [x] 4.3 Update the offline state UI in `src/routes/events/+page.svelte` to show cached data when available
-- [ ] 4.4 Verify Service Worker scope is compatible with Cloudflare Worker Assets SPA fallback
+- [x] 4.4 Verify Service Worker scope is compatible with Cloudflare Worker Assets SPA fallback
 
 ## 5. PWA Install/Update Prompts
 
@@ -35,6 +35,6 @@
 
 ## 6. Validation
 
-- [ ] 6.1 Run `npx @sveltejs/mcp svelte-autofixer` on all changed `.svelte` files
+- [x] 6.1 Run `npx @sveltejs/mcp svelte-autofixer` on all changed `.svelte` files
 - [x] 6.2 Run `npm run check` and fix all TypeScript errors
 - [x] 6.3 Run `npm run build` and confirm Service Worker is included in static output

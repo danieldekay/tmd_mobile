@@ -9,6 +9,10 @@ keep_vars = true
 directory = "./build"
 not_found_handling = "single-page-application"
 
+routes = [
+  { pattern = "mobile.tangomarathons.com", custom_domain = true }
+]
+
 [vars]
 PUBLIC_TMD_API_BASE_URL = "https://www.tangomarathons.com/wp-json/tmd/v3"
 PUBLIC_MATOMO_URL = ""
