@@ -24,7 +24,7 @@
     "svelte-check": "^4.4.6",
     "tailwindcss": "^4.2.4",
     "typescript": "^6.0.3",
-    "vite": "^8.0.10"
+    "vite": "^8.0.12"
   },
   "dependencies": {
     "@fontsource/atkinson-hyperlegible-next": "^5.2.7",
