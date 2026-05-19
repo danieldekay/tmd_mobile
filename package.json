@@ -20,7 +20,7 @@
     "@tailwindcss/vite": "^4.2.4",
     "@types/node": "^25.6.0",
     "postcss": "^8.5.12",
-    "svelte": "^5.55.5",
+    "svelte": "^5.55.8",
     "svelte-check": "^4.4.6",
     "tailwindcss": "^4.2.4",
     "typescript": "^6.0.3",
