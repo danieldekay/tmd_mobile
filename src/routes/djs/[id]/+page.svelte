@@ -4,6 +4,8 @@
 	import { page } from '$app/state';
 	import { getDj, TmdNotFoundError } from '$lib/api/tmd';
 	import type { TmdDjDetail } from '$lib/types';
+	import ErrorState from '$lib/components/ErrorState.svelte';
+	import PageHeader from '$lib/components/PageHeader.svelte';
 
 	let dj = $state<TmdDjDetail | null>(null);
 	let isLoading = $state(true);
@@ -59,52 +61,24 @@
 
 	{#if isLoading}
 		<div class="panel animate-pulse overflow-hidden" aria-busy="true" aria-label="Loading DJ">
-			<div class="bg-soft px-5 py-5">
-				<div class="bg-muted/20 h-3 w-1/3 rounded"></div>
-				<div class="bg-muted/20 mt-3 h-7 w-2/4 rounded"></div>
-				<div class="bg-muted/20 mt-3 h-3 w-1/4 rounded"></div>
+			<div class="bg-panel px-5 py-5">
+				<div class="bg-ink/10 h-3 w-1/3 rounded"></div>
+				<div class="bg-ink/10 mt-3 h-7 w-2/4 rounded"></div>
+				<div class="bg-ink/10 mt-3 h-3 w-1/4 rounded"></div>
 			</div>
 		</div>
 	{:else if isNotFound}
-		<div class="panel p-5" role="alert">
-			<p class="text-ink font-semibold">DJ not found</p>
-			<p class="text-muted mt-1 text-sm">
-				This DJ does not exist or may have been removed.
-			</p>
-			<a class="button-secondary mt-4 inline-flex text-sm" href={resolve('/djs')}>
-				Browse all DJs
-			</a>
-		</div>
+		<ErrorState title="DJ not found" message="No DJ exists with this ID." backHref={resolve('/djs')} backLabel="Back to DJs" />
 	{:else if errorMessage}
-		<div class="panel border-accent p-5" role="alert">
-			<p class="text-accent font-semibold">This DJ could not load</p>
-			<p class="text-muted mt-1 text-sm">{errorMessage}</p>
-			<button
-				class="button-secondary mt-4 text-sm"
-				type="button"
-				onclick={() => void load()}
-			>
-				Try again
-			</button>
-		</div>
+		<ErrorState accent title="Could not load DJ" message={errorMessage} onRetry={() => void load()} />
 	{:else if dj}
 		<article class="space-y-5">
-			<div class="panel overflow-hidden">
-				<div class="bg-primary px-5 py-5 text-white">
-					<p class="eyebrow text-white/70">DJ</p>
-					<h1 class="font-display mt-1 text-4xl font-bold">{dj.title}</h1>
-					{#if dj.city || dj.country}
-						<p class="mt-2 text-sm text-white/85">
-							{[dj.city, dj.country].filter(Boolean).join(', ')}
-						</p>
-					{/if}
-				</div>
-			</div>
+			<PageHeader eyebrow="DJ" title={dj.title} />
 
 			{#if dj.bio}
 				<section class="panel p-5" aria-labelledby="bio-heading">
 					<h2 id="bio-heading" class="font-display text-2xl font-bold">Biography</h2>
-					<p class="text-muted mt-3">{dj.bio}</p>
+					<p class="text-ink/60 mt-3">{dj.bio}</p>
 				</section>
 			{/if}
 

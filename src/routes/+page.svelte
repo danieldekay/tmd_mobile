@@ -1,139 +1,97 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
-	import { apiBaseUrl, fetchEvents, formatDateRange, formatLocation } from '$lib/api/tmd';
-	import type { RoadmapPhase, TmdEvent } from '$lib/types';
+	import PwaInstallCard from '$lib/components/PwaInstallCard.svelte';
+	import { getPwaInstallState } from '$lib/utils/pwa-install';
+	import { LANDING_FEATURES } from '$lib/data/landing-features';
+	import type { PwaInstallState } from '$lib/types/pwa';
+	import HeroSection from '$lib/components/landing/HeroSection.svelte';
+	import FeaturesSection from '$lib/components/landing/FeaturesSection.svelte';
+	import DirectorySection from '$lib/components/landing/DirectorySection.svelte';
+	import ExploreSection from '$lib/components/landing/ExploreSection.svelte';
 
-	let events = $state<TmdEvent[]>([]);
-	let isLoading = $state(true);
-	let errorMessage = $state<string | null>(null);
+	let pwaInstallState: PwaInstallState | null = $state(null);
 
-	const phases: RoadmapPhase[] = [
-		{
-			name: 'Phase 1',
-			window: 'Weeks 1-2',
-			outcome: 'Browse parity foundation',
-			items: ['Event list', 'event detail', 'calendar feed', 'registration links']
-		},
-		{
-			name: 'Phase 2',
-			window: 'Weeks 3-4',
-			outcome: 'Discovery parity',
-			items: ['Country filters', 'map view', 'DJ and teacher relationships', 'series pages']
-		},
-		{
-			name: 'Phase 3',
-			window: 'Weeks 5-6',
-			outcome: 'Personal utility',
-			items: ['Saved events', 'registration reminders', 'offline-friendly cached data']
-		},
-		{
-			name: 'Phase 4',
-			window: 'Weeks 7-8',
-			outcome: 'Operational polish',
-			items: ['Auth-ready API client', 'import status surfaces', 'production deployment hardening']
-		}
-	];
-
-	onMount(() => {
-		void loadPreviewEvents();
+	onMount(async () => {
+		pwaInstallState = await getPwaInstallState();
 	});
-
-	async function loadPreviewEvents() {
-		isLoading = true;
-		errorMessage = null;
-
-		try {
-			events = await fetchEvents({ limit: 6, futureOnly: true });
-		} catch (error) {
-			errorMessage = error instanceof Error ? error.message : 'Could not load events from TMD Core.';
-		} finally {
-			isLoading = false;
-		}
-	}
 </script>
 
-<section class="space-y-5">
-	<div class="panel overflow-hidden">
-		<div class="border-b border-line bg-primary px-5 py-5 text-white">
-			<p class="text-sm font-semibold uppercase">Feature parity planning shell</p>
-			<h1 class="mt-2 font-display text-4xl font-bold">Tango marathons, shaped for mobile use.</h1>
-		</div>
-		<div class="space-y-4 p-5">
-			<p class="text-muted">
-				This SvelteKit PWA is wired for TMD Core data and planned around the public behavior already proven in TMD4: events, details, calendar, map, DJs, teachers, series, and registration flow visibility.
-			</p>
-			<div class="grid gap-3 sm:grid-cols-2">
-				<a class="button-primary" href={resolve('/events')}>Open event plan</a>
-				<a class="button-secondary" href={resolve('/settings')}>Check setup</a>
-			</div>
-		</div>
-	</div>
+<svelte:head>
+	<title>TMD Mobile - Discover Tango Marathons</title>
+	<meta
+		name="description"
+		content="Browse curated tango marathons, teachers, and DJs. Install the free PWA app for offline access and instant notifications."
+	/>
+	<meta name="theme-color" content="#e74c3c" />
+	<meta property="og:title" content="TMD Mobile - Discover Tango Marathons" />
+	<meta
+		property="og:description"
+		content="Browse curated tango marathons, teachers, and DJs. Install the free PWA app for offline access and instant notifications."
+	/>
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content="https://mobile.tangomarathons.com/" />
+	<meta name="twitter:card" content="summary" />
+	<meta name="twitter:title" content="TMD Mobile" />
+	<meta name="twitter:description" content="Discover Tango Marathons" />
+</svelte:head>
 
-	<section class="space-y-3" aria-labelledby="live-data-title">
-		<div class="flex items-end justify-between gap-3">
-			<div>
-				<p class="eyebrow">TMD Core</p>
-				<h2 id="live-data-title" class="font-display text-3xl font-bold">Live API preview</h2>
-			</div>
-			<button class="button-secondary min-h-11 px-3 py-2 text-sm" type="button" onclick={loadPreviewEvents}>Refresh</button>
-		</div>
-
-		<div class="soft-panel p-4 text-sm text-muted">
-			API base: <span class="font-semibold text-ink">{apiBaseUrl}</span>
-		</div>
-
-		{#if isLoading}
-			<div class="panel p-5 text-muted">Loading upcoming events from TMD Core...</div>
-		{:else if errorMessage}
-			<div class="panel border-accent p-5">
-				<p class="font-semibold text-accent">The preview could not load yet.</p>
-				<p class="mt-2 text-sm text-muted">{errorMessage}</p>
-				<p class="mt-2 text-sm text-muted">This is expected until the API base URL and CORS behavior are confirmed for the mobile domain.</p>
-			</div>
-		{:else if events.length === 0}
-			<div class="panel p-5 text-muted">No events were returned by the configured endpoint.</div>
-		{:else}
-			<div class="space-y-3">
-				{#each events as event (event.id)}
-					<a class="panel block p-4 transition-colors hover:bg-soft" href={resolve('/events/[id]', { id: String(event.id) })}>
-						<p class="text-sm font-semibold text-primary">{formatDateRange(event)}</p>
-						<h3 class="mt-1 font-display text-2xl font-bold">{event.title}</h3>
-						<p class="mt-2 text-sm text-muted">{formatLocation(event)}</p>
-						{#if event.features.length > 0}
-							<div class="mt-3 flex flex-wrap gap-2">
-								{#each event.features.slice(0, 4) as feature (feature)}
-									<span class="rounded-control bg-soft px-2 py-1 text-xs font-semibold text-ink">{feature}</span>
-								{/each}
-							</div>
-						{/if}
-					</a>
-				{/each}
-			</div>
-		{/if}
+<main class="landing-page">
+	<HeroSection eventsHref={resolve('/events')} />
+	<FeaturesSection features={LANDING_FEATURES} />
+	<DirectorySection />
+	<section class="install-section">
+		<PwaInstallCard {pwaInstallState} />
 	</section>
+	<ExploreSection eventsHref={resolve('/events')} />
+</main>
 
-	<section class="space-y-3" aria-labelledby="roadmap-title">
-		<div>
-			<p class="eyebrow">Roadmap</p>
-			<h2 id="roadmap-title" class="font-display text-3xl font-bold">Feature parity phases</h2>
-		</div>
-		<div class="space-y-3">
-			{#each phases as phase (phase.name)}
-				<article class="panel p-4">
-					<div class="flex items-start justify-between gap-3">
-						<div>
-							<p class="text-sm font-semibold text-primary">{phase.name} - {phase.window}</p>
-							<h3 class="mt-1 font-display text-2xl font-bold">{phase.outcome}</h3>
-						</div>
-					</div>
-					<ul class="mt-3 grid gap-2 text-sm text-muted">
-						{#each phase.items as item (item)}
-							<li>{item}</li>
-						{/each}
-					</ul>
-				</article>
-			{/each}
-		</div>
-	</section>
-</section>
+<style>
+	:global(:root) {
+		--color-primary: #e74c3c;
+		--color-primary-dark: #c0392b;
+		--color-primary-light: #f4685a;
+		--color-text: #1f2937;
+		--color-text-secondary: #6b7280;
+		--color-background: #ffffff;
+		--color-background-secondary: #f9fafb;
+		--color-surface: #ffffff;
+		--color-border: #e5e7eb;
+		--color-success: #27ae60;
+	}
+
+	.landing-page {
+		display: flex;
+		flex-direction: column;
+		gap: 0;
+		padding: 0;
+		background: var(--color-background);
+		animation: fadeIn 0.4s ease-out;
+	}
+
+	.install-section {
+		background: var(--color-background-secondary);
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		padding: 60px 40px;
+		max-width: 1200px;
+		margin: 0 auto;
+		width: 100%;
+	}
+
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.landing-page {
+			animation: none;
+		}
+	}
+</style>

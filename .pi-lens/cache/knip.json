@@ -1,0 +1,458 @@
+{
+  "success": true,
+  "issues": [
+    {
+      "type": "file",
+      "name": "worker.ts",
+      "file": "worker.ts"
+    },
+    {
+      "type": "file",
+      "name": "src/lib/account-backed-interactions.ts",
+      "file": "src/lib/account-backed-interactions.ts"
+    },
+    {
+      "type": "file",
+      "name": "src/lib/matomo-offline.ts",
+      "file": "src/lib/matomo-offline.ts"
+    },
+    {
+      "type": "file",
+      "name": "src/lib/api/record-utils.ts",
+      "file": "src/lib/api/record-utils.ts"
+    },
+    {
+      "type": "file",
+      "name": "src/lib/api/tmd-normalize.ts",
+      "file": "src/lib/api/tmd-normalize.ts"
+    },
+    {
+      "type": "dependency",
+      "name": "@fontsource/ibm-plex-sans",
+      "file": "package.json",
+      "line": 36
+    },
+    {
+      "type": "dependency",
+      "name": "@melt-ui/svelte",
+      "file": "package.json",
+      "line": 37
+    },
+    {
+      "type": "dependency",
+      "name": "@types/leaflet",
+      "file": "package.json",
+      "line": 38
+    },
+    {
+      "type": "dependency",
+      "name": "date-fns",
+      "file": "package.json",
+      "line": 39
+    },
+    {
+      "type": "dependency",
+      "name": "dompurify",
+      "file": "package.json",
+      "line": 40
+    },
+    {
+      "type": "dependency",
+      "name": "leaflet",
+      "file": "package.json",
+      "line": 41
+    },
+    {
+      "type": "devDependency",
+      "name": "@types/testing-library__jest-dom",
+      "file": "package.json",
+      "line": 24
+    },
+    {
+      "type": "devDependency",
+      "name": "postcss",
+      "file": "package.json",
+      "line": 26
+    },
+    {
+      "type": "unlisted",
+      "name": "@vitest/coverage-v8",
+      "file": "vitest.config.ts"
+    },
+    {
+      "type": "export",
+      "name": "notificationPermission",
+      "file": "src/lib/reminders.ts",
+      "line": 51
+    },
+    {
+      "type": "export",
+      "name": "ReminderEntry",
+      "file": "src/lib/reminders.ts",
+      "line": 10
+    },
+    {
+      "type": "export",
+      "name": "fetchEvents",
+      "file": "src/lib/api/tmd.ts",
+      "line": 22
+    },
+    {
+      "type": "export",
+      "name": "fetchEventById",
+      "file": "src/lib/api/tmd.ts",
+      "line": 49
+    },
+    {
+      "type": "export",
+      "name": "formatDateRange",
+      "file": "src/lib/api/tmd.ts",
+      "line": 99
+    },
+    {
+      "type": "export",
+      "name": "formatLocation",
+      "file": "src/lib/api/tmd.ts",
+      "line": 114
+    },
+    {
+      "type": "export",
+      "name": "normalizeTmdEvent",
+      "file": "src/lib/api/tmd.ts",
+      "line": 298
+    },
+    {
+      "type": "export",
+      "name": "normalizeTmdEventDetail",
+      "file": "src/lib/api/tmd.ts",
+      "line": 321
+    },
+    {
+      "type": "export",
+      "name": "initPwaInstallState",
+      "file": "src/lib/utils/pwa-install-state.ts",
+      "line": 53
+    },
+    {
+      "type": "export",
+      "name": "refreshPwaInstallState",
+      "file": "src/lib/utils/pwa-install-state.ts",
+      "line": 67
+    },
+    {
+      "type": "export",
+      "name": "handleBeforeInstallPrompt",
+      "file": "src/lib/utils/pwa-install-state.ts",
+      "line": 85
+    },
+    {
+      "type": "export",
+      "name": "handleAppInstalled",
+      "file": "src/lib/utils/pwa-install-state.ts",
+      "line": 96
+    },
+    {
+      "type": "export",
+      "name": "browser",
+      "file": "src/lib/utils/pwa-install-state.ts",
+      "line": 106
+    },
+    {
+      "type": "export",
+      "name": "os",
+      "file": "src/lib/utils/pwa-install-state.ts",
+      "line": 107
+    },
+    {
+      "type": "export",
+      "name": "canInstall",
+      "file": "src/lib/utils/pwa-install-state.ts",
+      "line": 108
+    },
+    {
+      "type": "export",
+      "name": "installMethod",
+      "file": "src/lib/utils/pwa-install-state.ts",
+      "line": 109
+    },
+    {
+      "type": "export",
+      "name": "supportsNativePrompt",
+      "file": "src/lib/utils/pwa-install-state.ts",
+      "line": 110
+    },
+    {
+      "type": "export",
+      "name": "isInstalled",
+      "file": "src/lib/utils/pwa-install-state.ts",
+      "line": 111
+    },
+    {
+      "type": "export",
+      "name": "BUILD_TIMESTAMP",
+      "file": "src/lib/utils/build-version.ts",
+      "line": 8
+    },
+    {
+      "type": "export",
+      "name": "BUILD_HASH",
+      "file": "src/lib/utils/build-version.ts",
+      "line": 9
+    },
+    {
+      "type": "export",
+      "name": "trackPageView",
+      "file": "src/lib/matomo.ts",
+      "line": 38
+    },
+    {
+      "type": "export",
+      "name": "resetTracking",
+      "file": "src/lib/matomo.ts",
+      "line": 67
+    },
+    {
+      "type": "export",
+      "name": "User",
+      "file": "src/lib/auth.ts",
+      "line": 4
+    },
+    {
+      "type": "export",
+      "name": "RoadmapPhase",
+      "file": "src/lib/types.ts",
+      "line": 169
+    }
+  ],
+  "unusedExports": [
+    {
+      "type": "export",
+      "name": "notificationPermission",
+      "file": "src/lib/reminders.ts",
+      "line": 51
+    },
+    {
+      "type": "export",
+      "name": "ReminderEntry",
+      "file": "src/lib/reminders.ts",
+      "line": 10
+    },
+    {
+      "type": "export",
+      "name": "fetchEvents",
+      "file": "src/lib/api/tmd.ts",
+      "line": 22
+    },
+    {
+      "type": "export",
+      "name": "fetchEventById",
+      "file": "src/lib/api/tmd.ts",
+      "line": 49
+    },
+    {
+      "type": "export",
+      "name": "formatDateRange",
+      "file": "src/lib/api/tmd.ts",
+      "line": 99
+    },
+    {
+      "type": "export",
+      "name": "formatLocation",
+      "file": "src/lib/api/tmd.ts",
+      "line": 114
+    },
+    {
+      "type": "export",
+      "name": "normalizeTmdEvent",
+      "file": "src/lib/api/tmd.ts",
+      "line": 298
+    },
+    {
+      "type": "export",
+      "name": "normalizeTmdEventDetail",
+      "file": "src/lib/api/tmd.ts",
+      "line": 321
+    },
+    {
+      "type": "export",
+      "name": "initPwaInstallState",
+      "file": "src/lib/utils/pwa-install-state.ts",
+      "line": 53
+    },
+    {
+      "type": "export",
+      "name": "refreshPwaInstallState",
+      "file": "src/lib/utils/pwa-install-state.ts",
+      "line": 67
+    },
+    {
+      "type": "export",
+      "name": "handleBeforeInstallPrompt",
+      "file": "src/lib/utils/pwa-install-state.ts",
+      "line": 85
+    },
+    {
+      "type": "export",
+      "name": "handleAppInstalled",
+      "file": "src/lib/utils/pwa-install-state.ts",
+      "line": 96
+    },
+    {
+      "type": "export",
+      "name": "browser",
+      "file": "src/lib/utils/pwa-install-state.ts",
+      "line": 106
+    },
+    {
+      "type": "export",
+      "name": "os",
+      "file": "src/lib/utils/pwa-install-state.ts",
+      "line": 107
+    },
+    {
+      "type": "export",
+      "name": "canInstall",
+      "file": "src/lib/utils/pwa-install-state.ts",
+      "line": 108
+    },
+    {
+      "type": "export",
+      "name": "installMethod",
+      "file": "src/lib/utils/pwa-install-state.ts",
+      "line": 109
+    },
+    {
+      "type": "export",
+      "name": "supportsNativePrompt",
+      "file": "src/lib/utils/pwa-install-state.ts",
+      "line": 110
+    },
+    {
+      "type": "export",
+      "name": "isInstalled",
+      "file": "src/lib/utils/pwa-install-state.ts",
+      "line": 111
+    },
+    {
+      "type": "export",
+      "name": "BUILD_TIMESTAMP",
+      "file": "src/lib/utils/build-version.ts",
+      "line": 8
+    },
+    {
+      "type": "export",
+      "name": "BUILD_HASH",
+      "file": "src/lib/utils/build-version.ts",
+      "line": 9
+    },
+    {
+      "type": "export",
+      "name": "trackPageView",
+      "file": "src/lib/matomo.ts",
+      "line": 38
+    },
+    {
+      "type": "export",
+      "name": "resetTracking",
+      "file": "src/lib/matomo.ts",
+      "line": 67
+    },
+    {
+      "type": "export",
+      "name": "User",
+      "file": "src/lib/auth.ts",
+      "line": 4
+    },
+    {
+      "type": "export",
+      "name": "RoadmapPhase",
+      "file": "src/lib/types.ts",
+      "line": 169
+    }
+  ],
+  "unusedFiles": [
+    {
+      "type": "file",
+      "name": "worker.ts",
+      "file": "worker.ts"
+    },
+    {
+      "type": "file",
+      "name": "src/lib/account-backed-interactions.ts",
+      "file": "src/lib/account-backed-interactions.ts"
+    },
+    {
+      "type": "file",
+      "name": "src/lib/matomo-offline.ts",
+      "file": "src/lib/matomo-offline.ts"
+    },
+    {
+      "type": "file",
+      "name": "src/lib/api/record-utils.ts",
+      "file": "src/lib/api/record-utils.ts"
+    },
+    {
+      "type": "file",
+      "name": "src/lib/api/tmd-normalize.ts",
+      "file": "src/lib/api/tmd-normalize.ts"
+    }
+  ],
+  "unusedDeps": [
+    {
+      "type": "dependency",
+      "name": "@fontsource/ibm-plex-sans",
+      "file": "package.json",
+      "line": 36
+    },
+    {
+      "type": "dependency",
+      "name": "@melt-ui/svelte",
+      "file": "package.json",
+      "line": 37
+    },
+    {
+      "type": "dependency",
+      "name": "@types/leaflet",
+      "file": "package.json",
+      "line": 38
+    },
+    {
+      "type": "dependency",
+      "name": "date-fns",
+      "file": "package.json",
+      "line": 39
+    },
+    {
+      "type": "dependency",
+      "name": "dompurify",
+      "file": "package.json",
+      "line": 40
+    },
+    {
+      "type": "dependency",
+      "name": "leaflet",
+      "file": "package.json",
+      "line": 41
+    },
+    {
+      "type": "devDependency",
+      "name": "@types/testing-library__jest-dom",
+      "file": "package.json",
+      "line": 24
+    },
+    {
+      "type": "devDependency",
+      "name": "postcss",
+      "file": "package.json",
+      "line": 26
+    }
+  ],
+  "unlistedDeps": [
+    {
+      "type": "unlisted",
+      "name": "@vitest/coverage-v8",
+      "file": "vitest.config.ts"
+    }
+  ],
+  "summary": "Found 38 issues"
+}

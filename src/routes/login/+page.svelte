@@ -1,17 +1,23 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { login, authState } from '$lib/auth';
+	import { login, loginWithTangoAtlas, authState } from '$lib/auth';
+
+	const ssoEnabled = Boolean(import.meta.env.PUBLIC_SSO_INITIATION_URL);
 
 	let username = $state('');
 	let password = $state('');
 	let isLoading = $state(false);
 	let errorMessage = $state<string | null>(null);
+	// Set to true once we initiate navigation; prevents the effect from firing twice
+	// (e.g. when isLoading resets to false in the finally block after login succeeds).
+	let navigating = $state(false);
 
-	// Redirect if already authenticated (reactive — handles both initial state and
-	// auth state set by the layout's initAuth)
+	// Single place that drives navigation to /events: when auth is ready and a
+	// token is present. Works for both "already logged in" and post-login cases.
 	$effect(() => {
-		if ($authState.authToken !== null) {
+		if ($authState.initialized && $authState.authToken !== null && !navigating) {
+			navigating = true;
 			void goto(resolve('/events'));
 		}
 	});
@@ -22,7 +28,7 @@
 		errorMessage = null;
 		try {
 			await login(username, password);
-			void goto(resolve('/events'));
+			// $effect handles navigation once authToken is set — do NOT call goto here
 		} catch (err) {
 			errorMessage =
 				err instanceof Error ? err.message : 'Login failed. Please try again.';
@@ -38,7 +44,7 @@
 
 <div class="mx-auto max-w-sm px-4 py-12">
 	<h1 class="mb-2 text-2xl font-semibold text-ink">Log in to TMD</h1>
-	<p class="mb-8 text-sm text-muted">Save events and sync across devices.</p>
+	<p class="mb-8 text-sm text-ink/60">Save events and sync across devices.</p>
 
 	<form class="flex flex-col gap-4" onsubmit={handleSubmit}>
 		{#if errorMessage}
@@ -58,7 +64,7 @@
 				autocomplete="username"
 				required
 				bind:value={username}
-				class="rounded-control border border-line bg-canvas px-3 py-2 text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
+				class="border-2 border-ink bg-canvas px-3 py-2 text-ink focus:outline-none focus:ring-2 focus:ring-primary"
 			/>
 		</div>
 
@@ -70,7 +76,7 @@
 				autocomplete="current-password"
 				required
 				bind:value={password}
-				class="rounded-control border border-line bg-canvas px-3 py-2 text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
+				class="border-2 border-ink bg-canvas px-3 py-2 text-ink focus:outline-none focus:ring-2 focus:ring-primary"
 			/>
 		</div>
 
@@ -101,7 +107,7 @@
 		</button>
 	</form>
 
-	<p class="mt-6 text-sm text-muted">
+	<p class="mt-6 text-sm text-ink/60">
 		Forgot your password?
 		<a
 			href="https://www.tangomarathons.com/wp-login.php?action=lostpassword"
@@ -112,4 +118,28 @@
 			Reset it on tangomarathons.com
 		</a>
 	</p>
+
+	{#if ssoEnabled}
+		<div class="relative my-8 flex items-center" aria-hidden="true">
+			<div class="flex-1 border-t-2 border-ink/20"></div>
+			<span class="mx-4 text-xs text-ink/40">or continue with</span>
+			<div class="flex-1 border-t-2 border-ink/20"></div>
+		</div>
+
+		<button
+			type="button"
+			onclick={loginWithTangoAtlas}
+			class="button-secondary flex w-full items-center justify-center gap-2"
+		>
+			<svg
+				viewBox="0 0 24 24"
+				class="h-5 w-5 shrink-0"
+				fill="currentColor"
+				aria-hidden="true"
+			>
+				<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7l5-8v4h4l-5 8z" />
+			</svg>
+			Log in with TangoAtlas
+		</button>
+	{/if}
 </div>

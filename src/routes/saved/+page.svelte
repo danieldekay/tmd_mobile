@@ -61,7 +61,7 @@
 <section class="space-y-4">
 	<div>
 		<h1 class="font-display text-4xl font-bold">Saved</h1>
-		<p class="mt-1 text-muted">Events you've bookmarked</p>
+		<p class="mt-1 text-ink/60">Events you've bookmarked</p>
 	</div>
 
 	{#if isLoading}
@@ -69,9 +69,9 @@
 		<div class="space-y-3" aria-busy="true" aria-label="Loading saved events">
 			{#each { length: 3 } as _, i (i)}
 				<div class="panel animate-pulse p-4">
-					<div class="h-4 w-3/4 rounded bg-soft"></div>
-					<div class="mt-3 h-3 w-1/2 rounded bg-soft"></div>
-					<div class="mt-2 h-3 w-2/5 rounded bg-soft"></div>
+					<div class="h-4 w-3/4 rounded bg-panel"></div>
+					<div class="mt-3 h-3 w-1/2 rounded bg-panel"></div>
+					<div class="mt-2 h-3 w-2/5 rounded bg-panel"></div>
 				</div>
 			{/each}
 		</div>
@@ -79,7 +79,7 @@
 		<!-- Error state -->
 		<div class="panel border-accent p-5" role="alert">
 			<p class="font-semibold text-accent">Could not load saved events</p>
-			<p class="mt-1 text-sm text-muted">{errorMessage}</p>
+			<p class="mt-1 text-sm text-ink/60">{errorMessage}</p>
 			<button
 				class="button-secondary mt-4 text-sm"
 				type="button"
@@ -92,7 +92,7 @@
 		<!-- Empty state: no saved events (task 2.4) -->
 		<div class="panel p-5" role="status">
 			<p class="font-semibold text-ink">No saved events yet</p>
-			<p class="mt-1 text-sm text-muted">
+			<p class="mt-1 text-sm text-ink/60">
 				Tap the bookmark icon on any event to save it for quick access.
 			</p>
 			<a class="button-secondary mt-4 inline-flex text-sm" href={resolve('/events')}>
@@ -103,7 +103,7 @@
 		<!-- Saved IDs exist but no matches from API (events may have been removed) -->
 		<div class="panel p-5" role="status">
 			<p class="font-semibold text-ink">Saved events not found</p>
-			<p class="mt-1 text-sm text-muted">
+			<p class="mt-1 text-sm text-ink/60">
 				Some saved events may no longer be available.
 			</p>
 			<a class="button-secondary mt-4 inline-flex text-sm" href={resolve('/events')}>
@@ -120,12 +120,12 @@
 						class="panel block p-4 pr-12 transition-colors hover:border-primary focus-visible:ring-2 focus-visible:ring-primary"
 					>
 						<p class="font-semibold text-ink">{event.title}</p>
-						<p class="mt-1 text-sm text-muted">{formatEventDateRange(event)}</p>
-						<p class="text-sm text-muted">{formatEventLocation(event)}</p>
+						<p class="mt-1 text-sm text-ink/60">{formatEventDateRange(event)}</p>
+						<p class="text-sm text-ink/60">{formatEventLocation(event)}</p>
 						{#if event.badges.length > 0}
 							<div class="mt-3 flex flex-wrap gap-1.5">
 								{#each event.badges.slice(0, 3) as badge (badge)}
-									<span class="rounded-control bg-soft px-2 py-0.5 text-xs font-medium text-ink">
+									<span class="rounded-control bg-panel px-2 py-0.5 text-xs font-medium text-ink">
 										{badge}
 									</span>
 								{/each}

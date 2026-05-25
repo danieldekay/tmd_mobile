@@ -4,19 +4,15 @@
 	import { page } from '$app/state';
 	import { getEvent, TmdNotFoundError } from '$lib/api/tmd';
 	import type { TmdEventDetail } from '$lib/types';
+	import { formatDateRange, formatLocation, formatRegistrationDate } from '$lib/utils/format';
 	import SaveToggle from '$lib/components/SaveToggle.svelte';
-	import { scheduleReminder, hasReminder, notificationsSupported, removeReminder } from '$lib/reminders';
+	import ReminderButton from '$lib/components/ReminderButton.svelte';
 	import { incrementBrowseCount } from '$lib/pwa';
 
 	let event = $state<TmdEventDetail | null>(null);
 	let isLoading = $state(true);
 	let isNotFound = $state(false);
 	let errorMessage = $state<string | null>(null);
-
-	// Reminder state (tasks 3.2-3.4)
-	let reminderSet = $state(false);
-	let reminderDenied = $state(false);
-	let reminderLoading = $state(false);
 
 	const eventId = $derived(page.params.id ?? '');
 	const allLinks = $derived(getAllLinks(event));
@@ -40,7 +36,6 @@
 		try {
 			event = await getEvent(eventId);
 			incrementBrowseCount();
-			reminderSet = hasReminder(event.id);
 		} catch (error) {
 			if (error instanceof TmdNotFoundError) {
 				isNotFound = true;
@@ -53,30 +48,7 @@
 		}
 	}
 
-	function formatDateRange(e: TmdEventDetail): string {
-		if (!e.dateStart) return 'Date to be announced';
-		const fmt = (d: string) =>
-			new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', year: 'numeric' }).format(
-				new Date(d)
-			);
-		const start = fmt(e.dateStart);
-		const end = e.dateEnd ? fmt(e.dateEnd) : '';
-		return end && end !== start ? `${start} – ${end}` : start;
-	}
 
-	function formatRegistrationDate(dateStr: string): string {
-		const d = new Date(dateStr);
-		if (Number.isNaN(d.getTime())) return dateStr;
-		return new Intl.DateTimeFormat('en', {
-			day: 'numeric',
-			month: 'long',
-			year: 'numeric'
-		}).format(d);
-	}
-
-	function formatLocation(e: TmdEventDetail): string {
-		return [e.city, e.country].filter(Boolean).join(', ') || 'Location to be announced';
-	}
 
 	function getAllLinks(e: TmdEventDetail | null) {
 		if (!e) return { contact: [], social: [] };
@@ -92,7 +64,7 @@
 			},
 			{
 				label: 'Teachers',
-				people: e.teachers.map((p) => ({ ...p, internalHref: null }))
+				people: e.teachers.map((p) => ({ ...p, internalHref: resolve(`/teachers/${p.id}`) }))
 			},
 			{
 				label: 'Series',
@@ -103,24 +75,6 @@
 
 	function openExternalLink(href: string) {
 		globalThis.open(href, href.startsWith('mailto:') ? '_self' : '_blank', 'noopener,noreferrer');
-	}
-
-	async function toggleReminder() {
-		if (!event?.registrationDate) return;
-		if (reminderSet) {
-			removeReminder(event.id);
-			reminderSet = false;
-			return;
-		}
-		reminderLoading = true;
-		reminderDenied = false;
-		const result = await scheduleReminder(event.id, event.title, event.registrationDate);
-		reminderLoading = false;
-		if (result.ok) {
-			reminderSet = true;
-		} else if (result.reason === 'permission-denied') {
-			reminderDenied = true;
-		}
 	}
 </script>
 
@@ -135,22 +89,22 @@
 	{#if isLoading}
 		<!-- Skeleton loading state (task 3.4) -->
 		<div class="panel animate-pulse overflow-hidden" aria-busy="true" aria-label="Loading event">
-			<div class="bg-soft px-5 py-5">
-				<div class="h-3 w-1/3 rounded bg-muted/20"></div>
-				<div class="mt-3 h-7 w-3/4 rounded bg-muted/20"></div>
-				<div class="mt-3 h-3 w-1/2 rounded bg-muted/20"></div>
+			<div class="bg-panel px-5 py-5">
+				<div class="h-3 w-1/3 rounded bg-ink/10"></div>
+				<div class="mt-3 h-7 w-3/4 rounded bg-ink/10"></div>
+				<div class="mt-3 h-3 w-1/2 rounded bg-ink/10"></div>
 			</div>
 			<div class="grid gap-4 p-5">
-				<div class="h-3 w-1/4 rounded bg-soft"></div>
-				<div class="h-3 w-1/3 rounded bg-soft"></div>
-				<div class="h-3 w-1/4 rounded bg-soft"></div>
+				<div class="h-3 w-1/4 rounded bg-panel"></div>
+				<div class="h-3 w-1/3 rounded bg-panel"></div>
+				<div class="h-3 w-1/4 rounded bg-panel"></div>
 			</div>
 		</div>
 	{:else if isNotFound}
 		<!-- Not-found state (task 3.5) -->
 		<div class="panel p-5" role="alert">
 			<p class="font-semibold text-ink">Event not found</p>
-			<p class="mt-1 text-sm text-muted">
+			<p class="mt-1 text-sm text-ink/60">
 				This event does not exist or may have been removed.
 			</p>
 			<a class="button-secondary mt-4 inline-flex text-sm" href={resolve('/events')}>
@@ -161,7 +115,7 @@
 		<!-- Retryable error state (task 3.6) -->
 		<div class="panel border-accent p-5" role="alert">
 			<p class="font-semibold text-accent">This event could not load</p>
-			<p class="mt-1 text-sm text-muted">{errorMessage}</p>
+			<p class="mt-1 text-sm text-ink/60">{errorMessage}</p>
 			<button
 				class="button-secondary mt-4 text-sm"
 				type="button"
@@ -175,19 +129,33 @@
 		<article class="space-y-5">
 			<!-- Header with dates and location -->
 			<div class="panel overflow-hidden">
-				<div class="bg-primary px-5 py-5 text-white">
-					<p class="text-sm font-semibold uppercase">{formatDateRange(event)}</p>
+				<div class="bg-primary px-5 py-5 text-ink">
+						<p class="text-sm font-semibold uppercase">{formatDateRange(event.dateStart, event.dateEnd)}</p>
+					{#if event.categories.length > 0}
+						<div class="mt-2 flex flex-wrap gap-1.5" aria-label="Categories">
+							{#each event.categories as cat (cat)}
+								<span class="border-2 border-ink/40 bg-ink/10 px-2 py-0.5 text-xs font-bold uppercase text-ink">
+									{cat}
+								</span>
+							{/each}
+						</div>
+					{/if}
 					<div class="mt-2 flex items-start gap-3">
-						<h1 class="min-w-0 flex-1 font-display text-4xl font-bold">{event.title}</h1>
-						<SaveToggle id={event.id} title={event.title} class="mt-1 shrink-0 !bg-white/20 hover:!bg-white/30 !text-white" />
+						<div class="min-w-0 flex-1">
+							<h1 class="font-display text-4xl font-bold">{event.title}</h1>
+							{#if event.edition}
+								<p class="mt-1 text-sm font-mono text-ink/70">Ed. {event.edition}</p>
+							{/if}
+						</div>
+						<SaveToggle id={event.id} title={event.title} class="mt-1 shrink-0 !bg-ink/10 hover:!bg-ink/20 !text-ink" />
 					</div>
-					<p class="mt-3 text-sm text-white/85">{formatLocation(event)}</p>
+					<p class="mt-3 text-sm text-ink/70">{formatLocation(event.city, event.country)}</p>
 				</div>
 
 				<div class="grid gap-4 p-5">
 					{#if event.venue}
 						<div>
-							<p class="text-sm font-semibold text-muted">Venue</p>
+							<p class="text-sm font-semibold text-ink/60">Venue</p>
 							<p class="text-ink">{event.venue}</p>
 						</div>
 					{/if}
@@ -195,40 +163,19 @@
 					<!-- Registration date near top (spec: visible near primary actions) -->
 					{#if event.registrationDate}
 						<div>
-							<p class="text-sm font-semibold text-muted">Registration opens</p>
+							<p class="text-sm font-semibold text-ink/60">Registration opens</p>
 							<p class="text-ink">{formatRegistrationDate(event.registrationDate)}</p>
 						</div>
-						<!-- Reminder actions (tasks 3.2-3.4) -->
-						<div>
-							{#if reminderDenied}
-								<p class="text-sm text-accent" role="alert">
-									Notification permission denied. Enable notifications in your browser settings to use reminders.
-								</p>
-							{:else if reminderSet}
-								<div class="flex items-center gap-3">
-									<p class="text-sm text-muted">Reminder set ✓</p>
-									<button
-										type="button"
-										class="text-xs text-accent underline underline-offset-2"
-										onclick={() => { removeReminder(event!.id); reminderSet = false; }}
-									>Remove</button>
-								</div>
-							{:else if notificationsSupported()}
-								<button
-									type="button"
-									class="button-secondary text-sm"
-									disabled={reminderLoading}
-									onclick={() => void toggleReminder()}
-								>
-									{reminderLoading ? 'Setting reminder…' : 'Remind me when registration opens'}
-								</button>
-							{/if}
-						</div>
+						<ReminderButton
+							eventId={event.id}
+							eventTitle={event.title}
+							registrationDate={event.registrationDate}
+						/>
 					{/if}
 
 					{#if event.price || event.currency}
 						<div>
-							<p class="text-sm font-semibold text-muted">Price</p>
+							<p class="text-sm font-semibold text-ink/60">Price</p>
 							<p class="text-ink">{[event.price, event.currency].filter(Boolean).join(' ')}</p>
 						</div>
 					{/if}
@@ -241,7 +188,7 @@
 					<h2 id="features-title" class="font-display text-2xl font-bold">Features</h2>
 					<div class="mt-4 flex flex-wrap gap-2">
 						{#each event.features as feature (feature)}
-							<span class="rounded-control bg-soft px-3 py-2 text-sm font-semibold text-ink">
+							<span class="rounded-control bg-panel px-3 py-2 text-sm font-semibold text-ink">
 								{feature}
 							</span>
 						{/each}
@@ -290,7 +237,7 @@
 					<div class="mt-4 grid gap-4">
 						{#each relationshipGroups as group (group.label)}
 							<div>
-								<p class="text-sm font-semibold text-muted">{group.label}</p>
+								<p class="text-sm font-semibold text-ink/60">{group.label}</p>
 								<ul class="mt-2 grid gap-2 text-sm text-ink">
 									{#each group.people as person (person.id)}
 										<li>
@@ -302,7 +249,7 @@
 												>
 											{:else if person.url}
 												<button
-													class="underline decoration-line underline-offset-4"
+													class="underline decoration-ink/30 underline-offset-4"
 													type="button"
 													onclick={() => openExternalLink(person.url ?? '')}
 												>{person.name}</button

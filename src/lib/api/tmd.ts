@@ -1,7 +1,6 @@
 import type {
 	FetchEventsOptions,
 	TmdApiRecord,
-	TmdContactLink,
 	TmdDj,
 	TmdDjDetail,
 	TmdEvent,
@@ -9,14 +8,39 @@ import type {
 	TmdEventFilters,
 	TmdEventSeries,
 	TmdEventSummary,
-	TmdPerson,
-	TmdSeriesEdition
+	TmdPage,
+	TmdPost,
+	TmdPostDetail,
+	TmdTeacher,
+	TmdTeacherDetail
 } from '$lib/types';
 
+import { isRecord } from './record-utils';
+import {
+	extractCollection,
+	normalizeEvent,
+	normalizeTmdEvent,
+	normalizeTmdEventDetail,
+	normalizeTmdDj,
+	normalizeTmdDjDetail,
+	normalizeTmdEventSeries,
+	normalizeTmdTeacher,
+	normalizeWpPost,
+	normalizeWpPostDetail,
+	normalizeWpPage
+} from './tmd-normalize';
+
 const DEFAULT_API_BASE_URL = 'https://www.tangomarathons.com/wp-json/tmd/v3';
+const DEFAULT_WP_BASE_URL = 'https://www.tangomarathons.com/wp-json/wp/v2';
 
 export const apiBaseUrl = normalizeBaseUrl(
 	import.meta.env.PUBLIC_TMD_API_BASE_URL ?? DEFAULT_API_BASE_URL
+);
+
+export const wpBaseUrl = normalizeBaseUrl(
+	import.meta.env.PUBLIC_TMD_API_BASE_URL
+		? import.meta.env.PUBLIC_TMD_API_BASE_URL.replace(/\/wp-json\/tmd\/v3$/, '/wp-json/wp/v2')
+		: DEFAULT_WP_BASE_URL
 );
 
 export async function fetchEvents(options: FetchEventsOptions = {}): Promise<TmdEvent[]> {
@@ -96,25 +120,6 @@ export async function fetchEventById(id: number): Promise<TmdEvent> {
 	return normalizeEvent(payload);
 }
 
-export function formatDateRange(event: TmdEvent): string {
-	if (!event.startDate) {
-		return 'Date to be announced';
-	}
-
-	const startDate = formatDate(event.startDate);
-	const endDate = event.endDate ? formatDate(event.endDate) : '';
-
-	if (!endDate || endDate === startDate) {
-		return startDate;
-	}
-
-	return `${startDate} to ${endDate}`;
-}
-
-export function formatLocation(event: TmdEvent): string {
-	return [event.city, event.country].filter(Boolean).join(', ') || 'Location to be announced';
-}
-
 // ── New typed API (phase 1) ──────────────────────────────────────────────────
 
 export class TmdNotFoundError extends Error {
@@ -136,6 +141,8 @@ export async function getEvents(
 	const endpoint = new URL(`${apiBaseUrl}/events`);
 	endpoint.searchParams.set('per_page', String(perPage));
 	endpoint.searchParams.set('future', '1');
+	endpoint.searchParams.set('_embed', 'wp:term');
+	endpoint.searchParams.set('meta_fields', 'end_date');
 
 	if (filters?.country) {
 		endpoint.searchParams.set('country', filters.country);
@@ -186,6 +193,12 @@ export async function getEvents(
 			}
 			return true;
 		});
+	}
+	if (filters?.search && filters.search.trim() !== '') {
+		const searchLower = filters.search.trim().toLowerCase();
+		events = events.filter((e) =>
+			`${e.title} ${e.city ?? ''} ${e.country ?? ''}`.toLowerCase().includes(searchLower)
+		);
 	}
 
 	return events;
@@ -293,258 +306,143 @@ export async function getEventSeries(id: string | number): Promise<TmdEventSerie
 }
 
 /**
- * Map a raw API record to a TmdEventSummary (list DTO).
+ * Fetch a paged teacher list.
  */
-export function normalizeTmdEvent(record: TmdApiRecord): TmdEventSummary {
-	const meta = getRecord(record, 'meta');
-	return {
-		id: getNumber(record, ['id']) ?? 0,
-		title: getTitle(record),
-		slug: getString(record, ['slug']),
-		dateStart: getString(record, ['start_date', 'startDate']) ?? getString(meta, ['start_date', 'startDate']),
-		dateEnd: getString(record, ['end_date', 'endDate']) ?? getString(meta, ['end_date', 'endDate']),
-		registrationDate:
-			getString(record, ['registration_start_date', 'registrationStartDate']) ??
-			getString(meta, ['registration_start_date', 'registrationStartDate']),
-		city: getString(record, ['city']) ?? getString(meta, ['city']),
-		country: getString(record, ['country']) ?? getString(meta, ['country']),
-		venue: getString(record, ['venue_name', 'venueName', 'venue-name']) ?? getString(meta, ['venue_name', 'venueName', 'venue-name']),
-		lat: getNumber(record, ['lat', 'latitude', 'geo_lat']) ?? getNumber(meta, ['lat', 'latitude', 'geo_lat']),
-		lng: getNumber(record, ['lng', 'lon', 'longitude', 'geo_lng']) ?? getNumber(meta, ['lng', 'lon', 'longitude', 'geo_lng']),
-		badges: extractFeatures(record, meta)
-	};
+export async function getTeachers(perPage = 50): Promise<TmdTeacher[]> {
+	const endpoint = new URL(`${apiBaseUrl}/teachers`);
+	endpoint.searchParams.set('per_page', String(perPage));
+	endpoint.searchParams.set('orderby', 'title');
+	endpoint.searchParams.set('order', 'asc');
+
+	const response = await fetch(endpoint.toString(), {
+		headers: { accept: 'application/json' }
+	});
+
+	if (!response.ok) {
+		throw new Error(`TMD Core returned ${response.status} for ${endpoint.pathname}`);
+	}
+
+	const payload = (await response.json()) as unknown;
+	return extractCollection(payload, 'teachers').map(normalizeTmdTeacher);
 }
 
 /**
- * Map a raw API record to a TmdEventDetail (detail DTO).
+ * Fetch a single teacher by ID.
  */
-export function normalizeTmdEventDetail(record: TmdApiRecord): TmdEventDetail {
-	const meta = getRecord(record, 'meta');
-	const relationships = getRecord(record, 'relationships');
-	const summary = normalizeTmdEvent(record);
+export async function getTeacher(id: string | number): Promise<TmdTeacherDetail> {
+	const endpoint = new URL(`${apiBaseUrl}/teachers/${id}`);
 
-	const website =
-		getString(record, ['website']) ?? getString(meta, ['website']);
-	const email =
-		getString(record, ['email']) ?? getString(meta, ['email']);
-	const facebookEvent =
-		getString(record, ['facebook_event', 'facebookEvent']) ??
-		getString(meta, ['facebook_event', 'facebookEvent']);
-	const facebookGroup =
-		getString(record, ['facebook_group', 'facebookGroup']) ??
-		getString(meta, ['facebook_group', 'facebookGroup']);
-	const facebookPage =
-		getString(record, ['facebook_page', 'facebookPage']) ??
-		getString(meta, ['facebook_page', 'facebookPage']);
-
-	const contactLinks: TmdContactLink[] = [
-		website ? { label: 'Website', href: website } : null,
-		email ? { label: 'Email', href: `mailto:${email}` } : null
-	].filter((x): x is TmdContactLink => x !== null);
-
-	const socialLinks: TmdContactLink[] = [
-		facebookEvent ? { label: 'Facebook event', href: facebookEvent } : null,
-		facebookGroup ? { label: 'Facebook group', href: facebookGroup } : null,
-		facebookPage ? { label: 'Facebook page', href: facebookPage } : null
-	].filter((x): x is TmdContactLink => x !== null);
-
-	return {
-		...summary,
-		registrationDate:
-			getString(record, ['registration_start_date', 'registrationStartDate']) ??
-			getString(meta, ['registration_start_date', 'registrationStartDate']),
-		price: getString(record, ['price']) ?? getString(meta, ['price']),
-		currency: getString(record, ['currency']) ?? getString(meta, ['currency']),
-		website,
-		contactLinks,
-		socialLinks,
-		features: extractFeatures(record, meta),
-		djs: extractPeople(record, relationships, 'djs'),
-		teachers: extractPeople(record, relationships, 'teachers'),
-		series: extractPeople(record, relationships, 'event_series')
-	};
-}
-
-function normalizeTmdDj(record: TmdApiRecord): TmdDj {
-	const meta = getRecord(record, 'meta');
-	const website = getString(record, ['website']) ?? getString(meta, ['website']);
-	const facebook =
-		getString(record, ['facebook', 'facebook_url']) ??
-		getString(meta, ['facebook', 'facebook_url']);
-	const instagram =
-		getString(record, ['instagram', 'instagram_url']) ??
-		getString(meta, ['instagram', 'instagram_url']);
-
-	const socialLinks: TmdContactLink[] = [
-		facebook ? { label: 'Facebook', href: facebook } : null,
-		instagram ? { label: 'Instagram', href: instagram } : null,
-		website ? { label: 'Website', href: website } : null
-	].filter((x): x is TmdContactLink => x !== null);
-
-	return {
-		id: getNumber(record, ['id']) ?? 0,
-		title: getString(record, ['name']) ?? getTitle(record),
-		slug: getString(record, ['slug']),
-		city: getString(record, ['city']) ?? getString(meta, ['city']),
-		country: getString(record, ['country']) ?? getString(meta, ['country']),
-		website,
-		socialLinks
-	};
-}
-
-function normalizeTmdDjDetail(record: TmdApiRecord): TmdDjDetail {
-	const meta = getRecord(record, 'meta');
-	const base = normalizeTmdDj(record);
-	const bio =
-		getString(record, ['biography', 'bio', 'description']) ??
-		getString(meta, ['biography', 'bio', 'description']);
-	return { ...base, bio };
-}
-
-function normalizeTmdEventSeries(record: TmdApiRecord): TmdEventSeries {
-	const meta = getRecord(record, 'meta');
-	const relationships = getRecord(record, 'relationships');
-	const description =
-		getString(record, ['description', 'content']) ?? getString(meta, ['description']);
-
-	const rawEditions = Array.isArray(relationships.events)
-		? relationships.events
-		: Array.isArray(record.events)
-			? record.events
-			: [];
-
-	const editions: TmdSeriesEdition[] = (rawEditions as unknown[]).filter(isRecord).map((r) => {
-		const m = getRecord(r, 'meta');
-		return {
-			id: getNumber(r, ['id']) ?? 0,
-			title: getTitle(r),
-			dateStart:
-				getString(r, ['start_date', 'startDate']) ?? getString(m, ['start_date', 'startDate']),
-			dateEnd: getString(r, ['end_date', 'endDate']) ?? getString(m, ['end_date', 'endDate']),
-			city: getString(r, ['city']) ?? getString(m, ['city']),
-			country: getString(r, ['country']) ?? getString(m, ['country'])
-		};
+	const response = await fetch(endpoint.toString(), {
+		headers: { accept: 'application/json' }
 	});
 
-	return {
-		id: getNumber(record, ['id']) ?? 0,
-		title: getTitle(record),
-		slug: getString(record, ['slug']),
-		description,
-		city: getString(record, ['city']) ?? getString(meta, ['city']),
-		country: getString(record, ['country']) ?? getString(meta, ['country']),
-		editions
-	};
+	if (response.status === 404) {
+		throw new TmdNotFoundError(id, 'Teacher');
+	}
+
+	if (!response.ok) {
+		throw new Error(getResponseErrorMessage(response.status, endpoint.pathname));
+	}
+
+	const payload = (await response.json()) as unknown;
+	if (!isRecord(payload)) {
+		throw new Error('TMD Core returned an unexpected teacher response.');
+	}
+
+	return normalizeTmdTeacher(payload);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Fetch a paged list of WordPress blog posts via WP REST v2.
+ * Content is rendered HTML — only display from trusted origin.
+ */
+export async function getPosts(perPage = 20): Promise<TmdPost[]> {
+	const endpoint = new URL(`${wpBaseUrl}/posts`);
+	endpoint.searchParams.set('per_page', String(perPage));
+	endpoint.searchParams.set('_fields', 'id,slug,title,excerpt,date');
+	endpoint.searchParams.set('orderby', 'date');
+	endpoint.searchParams.set('order', 'desc');
+
+	const response = await fetch(endpoint.toString(), {
+		headers: { accept: 'application/json' }
+	});
+
+	if (!response.ok) {
+		throw new Error(`WordPress returned ${response.status} for ${endpoint.pathname}`);
+	}
+
+	const payload = (await response.json()) as unknown;
+	if (!Array.isArray(payload)) {
+		return [];
+	}
+
+	return payload.filter(isRecord).map(normalizeWpPost);
+}
+
+/**
+ * Fetch a single WordPress blog post by slug via WP REST v2.
+ * Content is rendered HTML — only display from trusted origin.
+ */
+export async function getPost(slug: string): Promise<TmdPostDetail> {
+	const endpoint = new URL(`${wpBaseUrl}/posts`);
+	endpoint.searchParams.set('slug', slug);
+	endpoint.searchParams.set('_fields', 'id,slug,title,content,date');
+
+	const response = await fetch(endpoint.toString(), {
+		headers: { accept: 'application/json' }
+	});
+
+	if (!response.ok) {
+		throw new Error(`WordPress returned ${response.status} for ${endpoint.pathname}`);
+	}
+
+	const payload = (await response.json()) as unknown;
+	if (!Array.isArray(payload) || payload.length === 0) {
+		throw new TmdNotFoundError(slug, 'Post');
+	}
+
+	const record = payload[0];
+	if (!isRecord(record)) {
+		throw new Error('WordPress returned an unexpected post response.');
+	}
+
+	return normalizeWpPostDetail(record);
+}
+
+/**
+ * Fetch a single WordPress page by slug via WP REST v2.
+ * Content is rendered HTML — only display from trusted origin.
+ */
+export async function getPage(slug: string): Promise<TmdPage> {
+	const endpoint = new URL(`${wpBaseUrl}/pages`);
+	endpoint.searchParams.set('slug', slug);
+	endpoint.searchParams.set('_fields', 'id,slug,title,content');
+
+	const response = await fetch(endpoint.toString(), {
+		headers: { accept: 'application/json' }
+	});
+
+	if (!response.ok) {
+		throw new Error(`WordPress returned ${response.status} for ${endpoint.pathname}`);
+	}
+
+	const payload = (await response.json()) as unknown;
+	if (!Array.isArray(payload) || payload.length === 0) {
+		throw new TmdNotFoundError(slug, 'Page');
+	}
+
+	const record = payload[0];
+	if (!isRecord(record)) {
+		throw new Error('WordPress returned an unexpected page response.');
+	}
+
+	return normalizeWpPage(record);
+}
+
+// ── Private helpers ──────────────────────────────────────────────────────────
 
 function normalizeBaseUrl(value: string): string {
 	return value.trim().replace(/\/$/, '');
-}
-
-function extractCollection(payload: unknown): TmdApiRecord[] {
-	if (Array.isArray(payload)) {
-		return payload.filter(isRecord);
-	}
-
-	if (!isRecord(payload)) {
-		return [];
-	}
-
-	const embedded = getRecord(payload, '_embedded');
-	const embeddedEvents = embedded.events;
-	if (Array.isArray(embeddedEvents)) {
-		return embeddedEvents.filter(isRecord);
-	}
-
-	for (const key of ['items', 'data', 'events', 'results']) {
-		const value = payload[key];
-		if (Array.isArray(value)) {
-			return value.filter(isRecord);
-		}
-	}
-
-	return [];
-}
-
-function normalizeEvent(record: TmdApiRecord): TmdEvent {
-	const meta = getRecord(record, 'meta');
-	const relationships = getRecord(record, 'relationships');
-
-	return {
-		id: getNumber(record, ['id']) ?? 0,
-		title: getTitle(record),
-		link: getString(record, ['link', 'url']),
-		slug: getString(record, ['slug']),
-		startDate: getString(record, ['start_date', 'startDate']) ?? getString(meta, ['start_date', 'startDate']),
-		endDate: getString(record, ['end_date', 'endDate']) ?? getString(meta, ['end_date', 'endDate']),
-		registrationStartDate:
-			getString(record, ['registration_start_date', 'registrationStartDate']) ??
-			getString(meta, ['registration_start_date', 'registrationStartDate']),
-		city: getString(record, ['city']) ?? getString(meta, ['city']),
-		country: getString(record, ['country']) ?? getString(meta, ['country']),
-		venueName:
-			getString(record, ['venue_name', 'venueName', 'venue-name']) ??
-			getString(meta, ['venue_name', 'venueName', 'venue-name']),
-		website: getString(record, ['website']) ?? getString(meta, ['website']),
-		email: getString(record, ['email']) ?? getString(meta, ['email']),
-		facebookEvent: getString(record, ['facebook_event', 'facebookEvent']) ?? getString(meta, ['facebook_event', 'facebookEvent']),
-		facebookGroup: getString(record, ['facebook_group', 'facebookGroup']) ?? getString(meta, ['facebook_group', 'facebookGroup']),
-		facebookPage: getString(record, ['facebook_page', 'facebookPage']) ?? getString(meta, ['facebook_page', 'facebookPage']),
-		price: getString(record, ['price']) ?? getString(meta, ['price']),
-		currency: getString(record, ['currency']) ?? getString(meta, ['currency']),
-		features: extractFeatures(record, meta),
-		relationships: {
-			djs: extractPeople(record, relationships, 'djs'),
-			teachers: extractPeople(record, relationships, 'teachers'),
-			series: extractPeople(record, relationships, 'event_series')
-		}
-	};
-}
-
-function getTitle(record: TmdApiRecord): string {
-	const title = record.title;
-
-	if (typeof title === 'string') {
-		return title;
-	}
-
-	if (isRecord(title)) {
-		return getString(title, ['rendered', 'raw']) ?? 'Untitled event';
-	}
-
-	return getString(record, ['event_name', 'name']) ?? 'Untitled event';
-}
-
-function extractFeatures(record: TmdApiRecord, meta: TmdApiRecord): string[] {
-	const featureMap: Array<[string, string]> = [
-		['role_balanced', 'Role balanced'],
-		['invitation_only', 'Invitation only'],
-		['have_registration', 'Registration'],
-		['have_milongas', 'Milongas'],
-		['have_tickets', 'Tickets'],
-		['have_live_music', 'Live music'],
-		['have_lessons', 'Lessons'],
-		['have_show', 'Show']
-	];
-
-	return featureMap
-		.filter(([key]) => getBoolean(record, key) ?? getBoolean(meta, key))
-		.map(([, label]) => label);
-}
-
-function extractPeople(record: TmdApiRecord, relationships: TmdApiRecord, key: string): TmdPerson[] {
-	const value = relationships[key] ?? record[key] ?? (key === 'event_series' ? record.series : undefined);
-	if (!Array.isArray(value)) {
-		return [];
-	}
-
-	return value.filter(isRecord).map((person) => ({
-		id: getNumber(person, ['id']) ?? 0,
-		name: getString(person, ['name', 'title']) ?? 'Unnamed',
-		url: getString(person, ['url', 'link'])
-	}));
 }
 
 function getResponseErrorMessage(status: number, pathname: string): string {
@@ -553,69 +451,4 @@ function getResponseErrorMessage(status: number, pathname: string): string {
 	}
 
 	return `TMD Core returned ${status} for ${pathname}`;
-}
-
-function getRecord(record: TmdApiRecord, key: string): TmdApiRecord {
-	const value = record[key];
-	return isRecord(value) ? value : {};
-}
-
-function getString(record: TmdApiRecord, keys: string[]): string | undefined {
-	for (const key of keys) {
-		const value = record[key];
-		if (typeof value === 'string' && value.trim().length > 0) {
-			return value.trim();
-		}
-	}
-
-	return undefined;
-}
-
-function getNumber(record: TmdApiRecord, keys: string[]): number | undefined {
-	for (const key of keys) {
-		const value = record[key];
-		if (typeof value === 'number') {
-			return value;
-		}
-		if (typeof value === 'string') {
-			const parsed = Number.parseInt(value, 10);
-			if (Number.isFinite(parsed)) {
-				return parsed;
-			}
-		}
-	}
-
-	return undefined;
-}
-
-function getBoolean(record: TmdApiRecord, key: string): boolean | undefined {
-	const value = record[key];
-	if (typeof value === 'boolean') {
-		return value;
-	}
-	if (typeof value === 'number') {
-		return value === 1;
-	}
-	if (typeof value === 'string') {
-		return ['1', 'true', 'yes'].includes(value.toLowerCase());
-	}
-
-	return undefined;
-}
-
-function formatDate(value: string): string {
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) {
-		return value;
-	}
-
-	return new Intl.DateTimeFormat('en', {
-		day: 'numeric',
-		month: 'short',
-		year: 'numeric'
-	}).format(date);
-}
-
-function isRecord(value: unknown): value is TmdApiRecord {
-	return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

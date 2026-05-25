@@ -13,6 +13,7 @@ rules:
     - State the user-visible outcome and affected routes or views.
     - Note API, data-shape, relationship, CORS, and deployment implications.
     - Mention whether a feature is public, authenticated, or admin-only.
+    - Identify any existing files that are approaching or over ~500 lines and will need refactoring as part of this change.
   specs:
     - Describe loading, empty, error, offline, and direct-route behavior.
     - Include mobile-first interaction behavior and accessibility expectations.
@@ -21,7 +22,16 @@ rules:
     - Reference concrete routes, modules, and data contracts.
     - Prefer TMD Core v3 REST first; introduce GraphQL only when it reduces overfetching or relationship complexity.
     - Preserve static compatibility unless a proposal explicitly changes deployment architecture.
+    - Files must stay under ~500 lines. If a file touched by this change will exceed that, include an explicit extraction plan (e.g. split into a component, composable, or helper module) in the design.
+    - Favour smaller, focused modules over larger catch-all files. A new concern that would bloat an existing file warrants a new file.
   tasks:
     - Keep tasks implementation-ready and file-scoped where possible.
     - Include validation with npm run check and npm run build for route or deployment changes.
     - Include API fixture validation when response normalization changes.
+    - Refactoring tasks (splitting oversized files, reducing complexity) must appear before any new-feature tasks that touch the same files.
+    - If any file involved in this change is already over ~500 lines, the first task must be to refactor it before adding new code.
+  code:
+    - Hard limit: no file may exceed ~500 lines. When a file would exceed this, extract cohesive logic into a new file before continuing.
+    - Refactor first, then extend. Never add new code to a file that already needs splitting.
+    - Keep cyclomatic complexity low. Extract complex conditionals, loops, and data transformations into clearly named helper functions.
+    - Prefer many small, single-responsibility files over few large general-purpose ones.

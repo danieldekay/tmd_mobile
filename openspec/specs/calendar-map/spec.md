@@ -51,3 +51,15 @@ The app SHALL provide a consent-aware map view at `/map` showing events that hav
 - GIVEN OSM tile requests fail (offline or blocked)
 - WHEN the user opens the map
 - THEN the app shows a graceful fallback message rather than a broken map
+
+### Scenario: Map uses list-level coordinates
+
+- GIVEN the event list endpoint returns `lat` and `lng` for events via `meta_fields`
+- WHEN the map renders
+- THEN markers are placed using list-level coordinates without requiring individual event detail fetches
+
+### Scenario: Events without coordinates are excluded
+
+- GIVEN some events have null or empty `lat`/`lng` fields
+- WHEN the map builds the marker set
+- THEN only events with valid numeric coordinates are included

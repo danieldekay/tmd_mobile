@@ -44,8 +44,20 @@ The app SHALL let users browse public relationship entities that help them decid
 - WHEN the user views the event detail page
 - THEN the series name is a link navigating to /event-series/[id]
 
+### Scenario: User browses teachers
+
+- GIVEN TMD Core exposes teacher records at `/wp-json/tmd/v3/teachers`
+- WHEN the user opens `/teachers`
+- THEN the app shows teacher names, location metadata, and links to individual teacher profiles
+
+### Scenario: User opens a teacher profile
+
+- GIVEN the user is on an event detail page or the teacher list
+- WHEN the user taps a teacher name that has an associated ID
+- THEN the app navigates to `/teachers/[id]` showing the teacher's full profile
+
 ### Scenario: Teacher data is unavailable
 
-- GIVEN TMD Core v3 does not return teacher endpoint data
+- GIVEN TMD Core v3 does not return teacher endpoint data or the teacher has no ID
 - WHEN teachers are referenced on an event
 - THEN teacher names are shown as plain text without navigation links

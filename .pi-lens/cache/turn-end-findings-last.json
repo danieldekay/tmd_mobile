@@ -1,0 +1,4 @@
+{
+  "signature": "vitest.config.ts::Unresolved from this turn — vitest.config.ts:\n🔴 STOP — 1 issue(s) must be fixed:\n  L20: No overload matches this call.\n    The last overload gave the following error.\n      Object literal may only specify known properties, and 'resolve' does not exist in type 'InlineConfig'.",
+  "sessionId": "lens-mp5sk4eb-2f0bc03d"
+}

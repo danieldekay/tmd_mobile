@@ -4,6 +4,7 @@
 	import { page } from '$app/state';
 	import { getEventSeries, TmdNotFoundError } from '$lib/api/tmd';
 	import type { TmdEventSeries } from '$lib/types';
+	import { formatDateRange } from '$lib/utils/format';
 
 	let series = $state<TmdEventSeries | null>(null);
 	let isLoading = $state(true);
@@ -58,18 +59,7 @@
 		}
 	}
 
-	function formatDateRange(dateStart?: string, dateEnd?: string): string {
-		if (!dateStart) return 'Date to be announced';
-		const fmt = (d: string) =>
-			new Intl.DateTimeFormat('en', {
-				day: 'numeric',
-				month: 'short',
-				year: 'numeric'
-			}).format(new Date(d));
-		const start = fmt(dateStart);
-		const end = dateEnd ? fmt(dateEnd) : '';
-		return end && end !== start ? `${start} – ${end}` : start;
-	}
+
 </script>
 
 <svelte:head>
@@ -85,15 +75,15 @@
 			aria-busy="true"
 			aria-label="Loading series"
 		>
-			<div class="bg-soft px-5 py-5">
-				<div class="bg-muted/20 h-3 w-1/3 rounded"></div>
-				<div class="bg-muted/20 mt-3 h-7 w-3/4 rounded"></div>
+			<div class="bg-panel px-5 py-5">
+				<div class="bg-ink/10 h-3 w-1/3 rounded"></div>
+				<div class="bg-ink/10 mt-3 h-7 w-3/4 rounded"></div>
 			</div>
 		</div>
 	{:else if isNotFound}
 		<div class="panel p-5" role="alert">
 			<p class="text-ink font-semibold">Series not found</p>
-			<p class="text-muted mt-1 text-sm">
+			<p class="text-ink/60 mt-1 text-sm">
 				This event series does not exist or may have been removed.
 			</p>
 			<a class="button-secondary mt-4 inline-flex text-sm" href={resolve('/events')}>
@@ -103,7 +93,7 @@
 	{:else if errorMessage}
 		<div class="panel border-accent p-5" role="alert">
 			<p class="text-accent font-semibold">This series could not load</p>
-			<p class="text-muted mt-1 text-sm">{errorMessage}</p>
+			<p class="text-ink/60 mt-1 text-sm">{errorMessage}</p>
 			<button
 				class="button-secondary mt-4 text-sm"
 				type="button"
@@ -115,18 +105,18 @@
 	{:else if series}
 		<article class="space-y-5">
 			<div class="panel overflow-hidden">
-				<div class="bg-primary px-5 py-5 text-white">
-					<p class="eyebrow text-white/70">Event Series</p>
+				<div class="bg-primary px-5 py-5 text-ink">
+					<p class="eyebrow text-ink/70">Event Series</p>
 					<h1 class="font-display mt-1 text-4xl font-bold">{series.title}</h1>
 					{#if series.city || series.country}
-						<p class="mt-2 text-sm text-white/85">
+						<p class="mt-2 text-sm text-ink/70">
 							{[series.city, series.country].filter(Boolean).join(', ')}
 						</p>
 					{/if}
 				</div>
 				{#if series.description}
 					<div class="p-5">
-						<p class="text-muted">{series.description}</p>
+						<p class="text-ink/60">{series.description}</p>
 					</div>
 				{/if}
 			</div>
@@ -140,15 +130,15 @@
 						{#each upcomingEditions as edition (edition.id)}
 							<li>
 								<a
-									class="rounded-control bg-soft hover:bg-soft/80 block p-3"
+									class="rounded-control bg-panel hover:bg-panel/80 block p-3"
 									href={resolve(`/events/${edition.id}`)}
 								>
 									<p class="text-ink font-semibold">{edition.title}</p>
-									<p class="text-muted mt-0.5 text-sm">
+									<p class="text-ink/60 mt-0.5 text-sm">
 										{formatDateRange(edition.dateStart, edition.dateEnd)}
 									</p>
 									{#if edition.city || edition.country}
-										<p class="text-muted mt-0.5 text-sm">
+										<p class="text-ink/60 mt-0.5 text-sm">
 											{[edition.city, edition.country].filter(Boolean).join(', ')}
 										</p>
 									{/if}
@@ -159,7 +149,7 @@
 				</section>
 			{:else}
 				<div class="panel p-5">
-					<p class="text-muted">No upcoming editions are scheduled for this series.</p>
+					<p class="text-ink/60">No upcoming editions are scheduled for this series.</p>
 				</div>
 			{/if}
 
@@ -170,15 +160,15 @@
 						{#each pastEditions as edition (edition.id)}
 							<li>
 								<a
-									class="rounded-control bg-soft hover:bg-soft/80 block p-3"
+									class="rounded-control bg-panel hover:bg-panel/80 block p-3"
 									href={resolve(`/events/${edition.id}`)}
 								>
 									<p class="text-ink font-semibold">{edition.title}</p>
-									<p class="text-muted mt-0.5 text-sm">
+									<p class="text-ink/60 mt-0.5 text-sm">
 										{formatDateRange(edition.dateStart, edition.dateEnd)}
 									</p>
 									{#if edition.city || edition.country}
-										<p class="text-muted mt-0.5 text-sm">
+										<p class="text-ink/60 mt-0.5 text-sm">
 											{[edition.city, edition.country].filter(Boolean).join(', ')}
 										</p>
 									{/if}

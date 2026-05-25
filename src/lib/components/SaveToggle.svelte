@@ -30,7 +30,7 @@
 
 <button
 	type="button"
-	class="flex h-9 w-9 items-center justify-center rounded-full transition-colors {saved ? 'bg-primary text-white' : 'bg-canvas/80 text-muted hover:text-primary'} {className}"
+	class="flex h-9 w-9 items-center justify-center transition-colors {saved ? 'bg-primary text-ink' : 'bg-canvas/80 text-ink/60 hover:text-primary'} {className}"
 	aria-label={saved ? `Unsave ${title}` : `Save ${title}`}
 	aria-pressed={saved}
 	onclick={toggle}

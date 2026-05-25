@@ -1,0 +1,344 @@
+{
+  "success": true,
+  "clones": [
+    {
+      "fileA": "src/routes/event-series/[id]/+page.svelte",
+      "startA": 160,
+      "fileB": "src/routes/event-series/[id]/+page.svelte",
+      "startB": 130,
+      "lines": 21,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/routes/blog/[slug]/+page.svelte",
+      "startA": 12,
+      "fileB": "src/routes/pages/[slug]/+page.svelte",
+      "startB": 12,
+      "lines": 10,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/components/landing/ExploreSection.svelte",
+      "startA": 21,
+      "fileB": "src/lib/components/landing/FeaturesSection.svelte",
+      "startB": 28,
+      "lines": 16,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/components/landing/ExploreSection.svelte",
+      "startA": 45,
+      "fileB": "src/lib/components/landing/HeroSection.svelte",
+      "startB": 78,
+      "lines": 22,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/components/landing/DirectorySection.svelte",
+      "startA": 26,
+      "fileB": "src/lib/components/landing/ExploreSection.svelte",
+      "startB": 20,
+      "lines": 22,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/routes/events/+page.svelte",
+      "startA": 145,
+      "fileB": "src/routes/saved/+page.svelte",
+      "startB": 70,
+      "lines": 6,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/routes/djs/+page.svelte",
+      "startA": 10,
+      "fileB": "src/routes/teachers/+page.svelte",
+      "startB": 10,
+      "lines": 13,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/routes/datenschutz/+page.svelte",
+      "startA": 144,
+      "fileB": "src/routes/was-ist-neu/+page.svelte",
+      "startB": 31,
+      "lines": 8,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/routes/cookie-richtlinie/+page.svelte",
+      "startA": 48,
+      "fileB": "src/routes/datenschutz/+page.svelte",
+      "startB": 143,
+      "lines": 13,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/routes/cookie-preferences/+page.svelte",
+      "startA": 115,
+      "fileB": "src/routes/was-ist-neu/+page.svelte",
+      "startB": 31,
+      "lines": 8,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/routes/changelog/+page.svelte",
+      "startA": 44,
+      "fileB": "src/routes/was-ist-neu/+page.svelte",
+      "startB": 43,
+      "lines": 13,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/routes/calendar/+page.svelte",
+      "startA": 157,
+      "fileB": "src/routes/events/+page.svelte",
+      "startB": 174,
+      "lines": 6,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/routes/blog/+page.svelte",
+      "startA": 10,
+      "fileB": "src/routes/teachers/+page.svelte",
+      "startB": 10,
+      "lines": 13,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/routes/blog/+page.svelte",
+      "startA": 26,
+      "fileB": "src/routes/blog/[slug]/+page.svelte",
+      "startB": 33,
+      "lines": 13,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/components/PwaInstallInstructionsIos.svelte",
+      "startA": 53,
+      "fileB": "src/lib/components/PwaInstallInstructionsSamsung.svelte",
+      "startB": 45,
+      "lines": 75,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/components/PwaInstallInstructionsIos.svelte",
+      "startA": 8,
+      "fileB": "src/lib/components/PwaInstallInstructionsSamsung.svelte",
+      "startB": 8,
+      "lines": 10,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/components/PwaInstallInstructionsIos.svelte",
+      "startA": 18,
+      "fileB": "src/lib/components/PwaInstallInstructionsSamsung.svelte",
+      "startB": 18,
+      "lines": 8,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/components/PwaInstallCard.svelte",
+      "startA": 159,
+      "fileB": "src/lib/components/PwaInstallInstructions.svelte",
+      "startB": 169,
+      "lines": 27,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/components/EventFilters.svelte",
+      "startA": 185,
+      "fileB": "src/lib/components/EventFilters.svelte",
+      "startB": 158,
+      "lines": 14,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/api/tmd.ts",
+      "startA": 150,
+      "fileB": "src/lib/api/tmd.ts",
+      "startB": 32,
+      "lines": 13,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/api/tmd.ts",
+      "startA": 209,
+      "fileB": "src/lib/api/tmd.ts",
+      "startB": 87,
+      "lines": 10,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/api/tmd.ts",
+      "startA": 230,
+      "fileB": "src/lib/api/tmd.ts",
+      "startB": 35,
+      "lines": 10,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/api/tmd.ts",
+      "startA": 253,
+      "fileB": "src/lib/api/tmd.ts",
+      "startB": 206,
+      "lines": 10,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/api/tmd.ts",
+      "startA": 272,
+      "fileB": "src/lib/api/tmd.ts",
+      "startB": 198,
+      "lines": 9,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/api/tmd.ts",
+      "startA": 280,
+      "fileB": "src/lib/api/tmd.ts",
+      "startB": 206,
+      "lines": 10,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/api/tmd.ts",
+      "startA": 482,
+      "fileB": "src/lib/api/tmd.ts",
+      "startB": 306,
+      "lines": 6,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/api/tmd-normalize.ts",
+      "startA": 37,
+      "fileB": "src/lib/api/tmd.ts",
+      "startB": 446,
+      "lines": 11,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/api/tmd-normalize.ts",
+      "startA": 71,
+      "fileB": "src/lib/api/tmd.ts",
+      "startB": 471,
+      "lines": 42,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/api/tmd-normalize.ts",
+      "startA": 114,
+      "fileB": "src/lib/api/tmd.ts",
+      "startB": 295,
+      "lines": 20,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/api/tmd-normalize.ts",
+      "startA": 135,
+      "fileB": "src/lib/api/tmd.ts",
+      "startB": 314,
+      "lines": 53,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/api/tmd-normalize.ts",
+      "startA": 187,
+      "fileB": "src/lib/api/tmd.ts",
+      "startB": 368,
+      "lines": 28,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/api/tmd-normalize.ts",
+      "startA": 214,
+      "fileB": "src/lib/api/tmd.ts",
+      "startB": 395,
+      "lines": 10,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/api/tmd-normalize.ts",
+      "startA": 223,
+      "fileB": "src/lib/api/tmd.ts",
+      "startB": 404,
+      "lines": 37,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/api/tmd-normalize.ts",
+      "startA": 260,
+      "fileB": "src/lib/api/tmd.ts",
+      "startB": 382,
+      "lines": 8,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/api/tmd-normalize.ts",
+      "startA": 320,
+      "fileB": "src/lib/api/tmd.ts",
+      "startB": 520,
+      "lines": 38,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/api/record-utils.ts",
+      "startA": 18,
+      "fileB": "src/lib/api/tmd.ts",
+      "startB": 563,
+      "lines": 11,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/api/record-utils.ts",
+      "startA": 28,
+      "fileB": "src/lib/api/tmd.ts",
+      "startB": 574,
+      "lines": 17,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/api/record-utils.ts",
+      "startA": 44,
+      "fileB": "src/lib/api/tmd.ts",
+      "startB": 591,
+      "lines": 15,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/api/record-utils.ts",
+      "startA": 58,
+      "fileB": "src/lib/api/tmd.ts",
+      "startB": 506,
+      "lines": 15,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/api/record-utils.ts",
+      "startA": 72,
+      "fileB": "src/lib/api/tmd.ts",
+      "startB": 606,
+      "lines": 11,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/reminders.ts",
+      "startA": 23,
+      "fileB": "src/lib/saved-events.ts",
+      "startB": 39,
+      "lines": 7,
+      "tokens": 0
+    },
+    {
+      "fileA": "src/lib/auth.ts",
+      "startA": 224,
+      "fileB": "src/lib/auth.ts",
+      "startB": 141,
+      "lines": 9,
+      "tokens": 0
+    }
+  ],
+  "duplicatedLines": 676,
+  "totalLines": 12050,
+  "percentage": 5.61
+}

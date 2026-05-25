@@ -18,6 +18,8 @@ export type TmdEventSummary = {
 	lat?: number;
 	lng?: number;
 	badges: string[];
+	edition: string | null;
+	categories: string[];
 };
 
 // Filter parameters for the event list
@@ -27,6 +29,7 @@ export type TmdEventFilters = {
 	dateAfter?: string;
 	dateBefore?: string;
 	registrationState?: 'open' | 'upcoming' | 'all';
+	search?: string;
 };
 
 // Normalised location for map marker use
@@ -119,6 +122,40 @@ export type TmdEventSeries = {
 	city?: string;
 	country?: string;
 	editions: TmdSeriesEdition[];
+};
+
+// Teacher summary for list view
+export type TmdTeacher = {
+	id: number;
+	title: string;
+	slug?: string;
+	city?: string;
+	country?: string;
+};
+
+// Teacher detail — same shape as summary (no bio field in API)
+export type TmdTeacherDetail = TmdTeacher;
+
+// WordPress REST v2 post summary for list view
+export type TmdPost = {
+	id: number;
+	slug: string;
+	title: string;
+	excerpt?: string;
+	date?: string;
+};
+
+// WordPress REST v2 post detail with rendered HTML content
+export type TmdPostDetail = TmdPost & {
+	content: string;
+};
+
+// WordPress REST v2 page
+export type TmdPage = {
+	id: number;
+	slug: string;
+	title: string;
+	content: string;
 };
 
 export type TmdApiRecord = Record<string, unknown>;

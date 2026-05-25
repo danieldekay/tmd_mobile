@@ -27,7 +27,7 @@ The app SHALL provide a DJ detail page showing profile information and connected
 
 - GIVEN a DJ record exists in TMD Core
 - WHEN the user opens /djs/[id]
-- THEN the app shows the DJ's name, location, links, biography when available, and a list of their upcoming connected events
+- THEN the app shows the DJ's name, location, bio when available, style tag when available, social links, and a list of their connected events
 
 ### Scenario: Connected events are shown
 

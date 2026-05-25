@@ -2,25 +2,36 @@
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { getEvents } from '$lib/api/tmd';
-	import type { TmdEventSummary } from '$lib/types';
+	import type { TmdEventFilters, TmdEventSummary } from '$lib/types';
+	import EventFilters from '$lib/components/EventFilters.svelte';
 
 	// ── State ──────────────────────────────────────────────────────────────────
 	let events = $state<TmdEventSummary[]>([]);
 	let isLoading = $state(true);
 	let errorMessage = $state<string | null>(null);
+	let filters = $state<TmdEventFilters>({});
+
+	// Derived: are any filters active?
+	const hasActiveFilters = $derived(
+		Object.values(filters).some((v) => v !== undefined && v !== '')
+	);
 
 	// ── Load ───────────────────────────────────────────────────────────────────
 	async function loadEvents(): Promise<void> {
 		isLoading = true;
 		errorMessage = null;
 		try {
-			events = await getEvents(100);
+			events = await getEvents(100, filters);
 		} catch (error) {
 			errorMessage =
 				error instanceof Error ? error.message : 'Could not load events from TMD Core.';
 		} finally {
 			isLoading = false;
 		}
+	}
+
+	async function handleFilterChange(): Promise<void> {
+		await loadEvents();
 	}
 
 	onMount(() => {
@@ -104,20 +115,23 @@
 <section class="space-y-5">
 	<div>
 		<h1 class="font-display text-4xl font-bold">Calendar</h1>
-		<p class="mt-1 text-muted">Upcoming tango events by month</p>
+		<p class="mt-1 text-ink/60">Upcoming tango events by month</p>
 	</div>
+
+	<!-- Filter bar -->
+	<EventFilters bind:filters onchange={handleFilterChange} />
 
 	{#if isLoading}
 		<!-- Skeleton -->
 		<div class="space-y-6" aria-busy="true" aria-label="Loading calendar">
 			{#each { length: 3 } as _, mi (mi)}
 				<div>
-					<div class="mb-3 h-5 w-36 animate-pulse rounded bg-soft"></div>
+					<div class="mb-3 h-5 w-36 animate-pulse rounded bg-panel"></div>
 					{#each { length: 3 } as _, ei (ei)}
 						<div class="panel mb-2 animate-pulse p-4">
-							<div class="h-3 w-24 rounded bg-soft"></div>
-							<div class="mt-2 h-4 w-3/4 rounded bg-soft"></div>
-							<div class="mt-1 h-3 w-1/2 rounded bg-soft"></div>
+							<div class="h-3 w-24 rounded bg-panel"></div>
+							<div class="mt-2 h-4 w-3/4 rounded bg-panel"></div>
+							<div class="mt-1 h-3 w-1/2 rounded bg-panel"></div>
 						</div>
 					{/each}
 				</div>
@@ -127,16 +141,22 @@
 		<!-- Error -->
 		<div class="panel border-accent p-5" role="alert">
 			<p class="font-semibold text-accent">Calendar could not load</p>
-			<p class="mt-1 text-sm text-muted">{errorMessage}</p>
+			<p class="mt-1 text-sm text-ink/60">{errorMessage}</p>
 			<button class="button-secondary mt-4 text-sm" type="button" onclick={() => void loadEvents()}>
 				Try again
 			</button>
+		</div>
+	{:else if monthGroups.length === 0 && hasActiveFilters}
+		<!-- Filtered empty -->
+		<div class="panel p-5" role="status">
+			<p class="font-semibold text-ink">No events match your filters</p>
+			<p class="mt-1 text-sm text-ink/60">Try adjusting or clearing your filters to see more events.</p>
 		</div>
 	{:else if monthGroups.length === 0}
 		<!-- Empty -->
 		<div class="panel p-5" role="status">
 			<p class="font-semibold text-ink">No upcoming events</p>
-			<p class="mt-1 text-sm text-muted">There are no tango marathons scheduled at the moment. Check back soon.</p>
+			<p class="mt-1 text-sm text-ink/60">There are no tango marathons scheduled at the moment. Check back soon.</p>
 		</div>
 	{:else}
 		<!-- Agenda -->
@@ -153,7 +173,7 @@
 							<li>
 								<a
 									href={resolve(`/events/${event.id}`)}
-									class="panel flex gap-4 p-4 transition-colors hover:bg-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+									class="panel flex gap-4 p-4 transition-colors hover:bg-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
 									aria-label="View details for {event.title}"
 								>
 									<!-- Date column -->
@@ -162,11 +182,11 @@
 											<span class="block font-display text-2xl font-bold leading-none text-ink">
 												{new Date(event.dateStart).getDate()}
 											</span>
-											<span class="mt-0.5 block text-xs text-muted">
+											<span class="mt-0.5 block text-xs text-ink/60">
 												{new Intl.DateTimeFormat('en', { month: 'short' }).format(new Date(event.dateStart))}
 											</span>
 										{:else}
-											<span class="block text-xs text-muted">TBA</span>
+											<span class="block text-xs text-ink/60">TBA</span>
 										{/if}
 									</div>
 
@@ -175,12 +195,12 @@
 										<p class="font-semibold leading-snug text-ink">{event.title}</p>
 
 										{#if event.dateEnd && event.dateStart && event.dateEnd !== event.dateStart}
-											<p class="mt-0.5 text-xs text-muted">
+											<p class="mt-0.5 text-xs text-ink/60">
 												{formatDay(event.dateStart)} – {formatFullDate(event.dateEnd)}
 											</p>
 										{/if}
 
-										<p class="mt-0.5 text-sm text-muted">
+										<p class="mt-0.5 text-sm text-ink/60">
 											{[event.city, event.country].filter(Boolean).join(', ') || 'Location TBD'}
 										</p>
 
@@ -189,7 +209,7 @@
 											{@const status = regStatus(event)}
 											<div class="mt-2 flex items-center gap-1.5 text-xs">
 												<span
-													class="rounded-control px-2 py-0.5 font-semibold {status === 'open' ? 'bg-primary/10 text-primary' : 'bg-soft text-muted'}"
+													class="border-2 border-ink px-2 py-0.5 font-semibold {status === 'open' ? 'bg-primary text-ink' : 'bg-panel text-ink/60'}"
 												>
 													{status === 'open' ? 'Registration open' : 'Reg. from ' + formatDay(event.registrationDate)}
 												</span>

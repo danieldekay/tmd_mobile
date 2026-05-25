@@ -12,6 +12,9 @@ export const LOGIN_MUTATION = `
         id
         name
         email
+        avatar {
+          url
+        }
       }
     }
   }
@@ -21,6 +24,19 @@ export const REFRESH_TOKEN_MUTATION = `
   mutation RefreshAuthToken($input: RefreshJwtAuthTokenInput!) {
     refreshJwtAuthToken(input: $input) {
       authToken
+    }
+  }
+`;
+
+export const GET_VIEWER_QUERY = `
+  query GetViewer {
+    viewer {
+      id
+      name
+      email
+      avatar {
+        url
+      }
     }
   }
 `;
