@@ -22,7 +22,7 @@
     "picomatch": "^4.0.5",
     "postcss": "^8.5.12",
     "svelte": "^5.55.5",
-    "svelte-check": "^4.4.6",
+    "svelte-check": "^4.7.3",
     "tailwindcss": "^4.2.4",
     "typescript": "^6.0.3",
     "vite": "^8.0.10"
