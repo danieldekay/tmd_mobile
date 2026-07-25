@@ -53,25 +53,24 @@
 		}
 	}
 
+	const dateRangeFormatter = new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', year: 'numeric' });
 	function formatDateRange(e: TmdEventDetail): string {
 		if (!e.dateStart) return 'Date to be announced';
-		const fmt = (d: string) =>
-			new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', year: 'numeric' }).format(
-				new Date(d)
-			);
+		const fmt = (d: string) => dateRangeFormatter.format(new Date(d));
 		const start = fmt(e.dateStart);
 		const end = e.dateEnd ? fmt(e.dateEnd) : '';
 		return end && end !== start ? `${start} – ${end}` : start;
 	}
 
+	const registrationDateFormatter = new Intl.DateTimeFormat('en', {
+		day: 'numeric',
+		month: 'long',
+		year: 'numeric'
+	});
 	function formatRegistrationDate(dateStr: string): string {
 		const d = new Date(dateStr);
 		if (Number.isNaN(d.getTime())) return dateStr;
-		return new Intl.DateTimeFormat('en', {
-			day: 'numeric',
-			month: 'long',
-			year: 'numeric'
-		}).format(d);
+		return registrationDateFormatter.format(d);
 	}
 
 	function formatLocation(e: TmdEventDetail): string {
