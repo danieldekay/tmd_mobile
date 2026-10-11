@@ -10,6 +10,7 @@ import type {
   TmdEvent, TmdEventDetail, TmdEventFilters, TmdEventSeries, TmdEventSummary,
   TmdPerson, TmdSeriesEdition, TmdTeacher, TmdTeacherDetail
 } from '$lib/types';
+import { safeHttpUrl, safeMailto } from '../security/public-links.ts';
 
 const DEFAULT_V4_BASE_URL = 'https://www.tangomarathons.com/wp-json/tmd/v4';
 const existingBase = import.meta.env?.PUBLIC_TMD_API_BASE_URL as string | undefined;
@@ -140,13 +141,8 @@ function featureNames(item: JsonObject): string[] {
     .map(([, label]) => label);
 }
 function validLink(raw: unknown, email = false): string | undefined {
-  const value = string(raw);
-  if (!value) return;
-  if (email) return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? 'mailto:' + value : undefined;
-  try {
-    const u = new URL(value);
-    return u.protocol === 'https:' || u.protocol === 'http:' ? u.href : undefined;
-  } catch { return; }
+  // Share V3/V4 URL safety: reject HTTP credentials and mailto headers.
+  return email ? safeMailto(raw) : safeHttpUrl(raw);
 }
 function links(item: JsonObject, fields: Array<[string, string]>): TmdContactLink[] {
   return fields.flatMap(([key, label]) => {
@@ -160,7 +156,7 @@ function linked(item: JsonObject, key: string): TmdPerson[] {
   const values = Array.isArray(embedded[key]) ? embedded[key] :
     Array.isArray(linked[key]) ? linked[key] : [];
   return values.flatMap(raw => {
-    const x = object(raw), href = string(x.href);
+    const x = object(raw), href = safeHttpUrl(x.href);
     const itemId = id(x.id) ?? id(href?.match(/\/(\d+)(?:\?.*)?$/)?.[1]);
     if (!itemId) return [];
     return [{ id: itemId, name: string(x.title) ?? 'Unnamed', url: href }];
