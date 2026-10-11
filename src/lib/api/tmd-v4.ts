@@ -12,8 +12,8 @@ import type {
 } from '$lib/types';
 
 const DEFAULT_V4_BASE_URL = 'https://www.tangomarathons.com/wp-json/tmd/v4';
-const existingBase = import.meta.env.PUBLIC_TMD_API_BASE_URL as string | undefined;
-const explicitBase = import.meta.env.PUBLIC_TMD_V4_API_BASE_URL as string | undefined;
+const existingBase = import.meta.env?.PUBLIC_TMD_API_BASE_URL as string | undefined;
+const explicitBase = import.meta.env?.PUBLIC_TMD_V4_API_BASE_URL as string | undefined;
 export const tmdV4BaseUrl = (explicitBase ??
   (existingBase?.replace(/\/tmd\/v3\/?$/, '/tmd/v4')) ??
   DEFAULT_V4_BASE_URL).replace(/\/+$/, '');
@@ -30,8 +30,12 @@ export type TmdV4Page<T> = {
 };
 
 export class TmdV4ApiError extends Error {
-  constructor(public status: number, public path: string) {
+  readonly status: number;
+  readonly path: string;
+  constructor(status: number, path: string) {
     super('TMD V4 returned ' + status + ' for ' + path);
+    this.status = status;
+    this.path = path;
     this.name = 'TmdV4ApiError';
   }
 }
@@ -193,6 +197,9 @@ export function normalizeV4EventDetail(item: TmdApiRecord): TmdEventDetail {
 export async function getV4EventPage(
   perPage = 20, filters?: TmdEventFilters, page = 1
 ): Promise<TmdV4Page<TmdEventSummary>> {
+  if (filters?.registrationState === 'open') {
+    throw new Error('TMD V4 does not yet provide authoritative registration-open filtering');
+  }
   const url = new URL(tmdV4BaseUrl + '/events');
   url.searchParams.set('page', String(intParam(page, 1, 100000)));
   url.searchParams.set('per_page', String(intParam(perPage, 1, 100)));
