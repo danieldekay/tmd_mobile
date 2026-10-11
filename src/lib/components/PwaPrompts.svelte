@@ -15,6 +15,7 @@
 	// ── Update prompt state ────────────────────────────────────────────────────
 	let showUpdateBanner = $state(false);
 	let waitingWorker = $state<ServiceWorker | null>(null);
+	let isApplyingUpdate = $state(false);
 
 	onMount(() => {
 		// Install prompt — capture beforeinstallprompt
@@ -26,6 +27,15 @@
 			}
 		};
 		window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+
+		// Reload only after a new worker controls this page. An immediate reload
+		// can serve the old index.html again and trap standalone installations.
+		const onControllerChange = () => {
+			if (isApplyingUpdate) window.location.reload();
+		};
+		if ('serviceWorker' in navigator) {
+			navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+		}
 
 		// Service Worker update detection
 		if ('serviceWorker' in navigator) {
@@ -51,6 +61,9 @@
 
 		return () => {
 			window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+			if ('serviceWorker' in navigator) {
+				navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+			}
 		};
 	});
 
@@ -72,9 +85,10 @@
 
 	function applyUpdate() {
 		if (!waitingWorker) return;
+		isApplyingUpdate = true;
 		waitingWorker.postMessage({ type: 'SKIP_WAITING' });
 		showUpdateBanner = false;
-		window.location.reload();
+		// controllerchange triggers the reload after activation.
 	}
 </script>
 
