@@ -17,7 +17,8 @@ self.addEventListener('install', (event) => {
 	event.waitUntil((async () => {
 		const cache = await caches.open(SHELL_CACHE);
 		await cache.addAll(ASSETS);
-		await self.skipWaiting();
+		// When upgrading an installed PWA, wait for the user to accept the
+		// update. PwaPrompts sends SKIP_WAITING and reloads on controllerchange.
 	})());
 });
 
