@@ -52,7 +52,7 @@ export async function fetchEvents(options: FetchEventsOptions = {}): Promise<Tmd
 }
 
 export async function fetchEventById(id: number): Promise<TmdEvent> {
-	if (useTmdV4) return tmdV4.fetchV4EventById(id);
+	if (useTmdV4) return v4OrNotFound(tmdV4.fetchV4EventById(id), id);
 	const endpoint = new URL(`${apiBaseUrl}/events/${id}`);
 	endpoint.searchParams.set('include_relationships', 'true');
 	endpoint.searchParams.set(
@@ -130,6 +130,22 @@ export class TmdNotFoundError extends Error {
 	}
 }
 
+/** Keep existing route-specific 404 UX while switching backend APIs. */
+async function v4OrNotFound<T>(
+	request: Promise<T>,
+	id: string | number,
+	resource = 'Event'
+): Promise<T> {
+	try {
+		return await request;
+	} catch (error) {
+		if (error instanceof tmdV4.TmdV4ApiError && error.status === 404) {
+			throw new TmdNotFoundError(id, resource);
+		}
+		throw error;
+	}
+}
+
 /**
  * Fetch upcoming events and return lightweight summary DTOs.
  * Server-side filters: country, after, before.
@@ -202,7 +218,7 @@ export async function getEvents(
  * Fetch a single event by ID and return a full detail DTO.
  */
 export async function getEvent(id: string | number): Promise<TmdEventDetail> {
-	if (useTmdV4) return tmdV4.getV4Event(id);
+	if (useTmdV4) return v4OrNotFound(tmdV4.getV4Event(id), id);
 	const endpoint = new URL(`${apiBaseUrl}/events/${id}`);
 	endpoint.searchParams.set('include_relationships', 'true');
 
@@ -252,7 +268,7 @@ export async function getDjs(perPage = 50): Promise<TmdDj[]> {
  * Fetch a single DJ by ID.
  */
 export async function getDj(id: string | number): Promise<TmdDjDetail> {
-	if (useTmdV4) return tmdV4.getV4Dj(id);
+	if (useTmdV4) return v4OrNotFound(tmdV4.getV4Dj(id), id, 'DJ');
 	const endpoint = new URL(`${apiBaseUrl}/djs/${id}`);
 
 	const response = await fetch(endpoint.toString(), {
@@ -279,7 +295,7 @@ export async function getDj(id: string | number): Promise<TmdDjDetail> {
  * Fetch a single event series by ID, including editions if available.
  */
 export async function getEventSeries(id: string | number): Promise<TmdEventSeries> {
-	if (useTmdV4) return tmdV4.getV4Series(id);
+	if (useTmdV4) return v4OrNotFound(tmdV4.getV4Series(id), id, 'Event series');
 	const endpoint = new URL(`${apiBaseUrl}/event-series/${id}`);
 	endpoint.searchParams.set('include_relationships', 'true');
 
