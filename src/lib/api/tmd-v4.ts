@@ -283,12 +283,18 @@ function dj(item: JsonObject): TmdDj {
     ])
   };
 }
-export async function getV4Djs(perPage = 50): Promise<TmdDj[]> {
+export async function getV4DjsPage(perPage = 50, page = 1): Promise<TmdV4Page<TmdDj>> {
   const url = new URL(tmdV4BaseUrl + '/djs');
   url.searchParams.set('per_page', String(intParam(perPage, 1, 100)));
+  url.searchParams.set('page', String(intParam(page, 1, 100000)));
   url.searchParams.set('orderby', 'title');
   url.searchParams.set('order', 'asc');
-  return (await collection(url)).items.map(dj);
+  const result = await collection(url);
+  return { ...result, items: result.items.map(dj) };
+}
+
+export async function getV4Djs(perPage = 50): Promise<TmdDj[]> {
+  return (await getV4DjsPage(perPage)).items;
 }
 export async function getV4Dj(idValue: string | number): Promise<TmdDjDetail> {
   const url = new URL(tmdV4BaseUrl + '/djs/' + encodeURIComponent(String(idValue)));
