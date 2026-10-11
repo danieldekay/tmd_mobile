@@ -58,6 +58,14 @@ For the same fixed 30- and 90-day event windows, compare V3 and V4:
 
 Store anonymized fixture samples, discrepancies and resolution links in issues #46, #52 and #54. Do not activate V4 while parity differences are unexplained.
 
+## Offline cache and PWA regression hardening
+
+- The anonymous public-only API cache rejects incoming WordPress nonce, bearer, custom API-key and CSRF headers, and rejects public responses marked `private`, `no-store`, `no-cache`, `Set-Cookie`, or `Vary: Cookie/Authorization/*`. Credential-bearing requests are network-only.
+- The service worker's public API cache name was rotated from v2 to v3 to avoid serving entries created before these rules. Older named caches are removed on activation.
+- Build-generated JS/CSS remains mandatory to precache; missing optional static host-control files (such as `/_headers`) can no longer abort the entire service-worker installation. If `/index.html` is unavailable, installation attempts to cache the app root as the offline shell.
+- Test these properties in **installed iOS/Android PWAs**, not only in Node unit tests. In particular, verify upgrade controller change, airplane-mode navigation, anonymous public API caching, and that authenticated/session-dependent WordPress responses cannot persist offline.
+- A WordPress V3 security hotfix now explicitly returns `private, no-store` for owner-specific list and detail responses. This must be verified on the actual deployed host and edge/CDN before closing the release gate.
+
 ## 4. Browser, app and PWA checks
 
 With a separately built staging app and PUBLIC_TMD_USE_V4=true, test:
