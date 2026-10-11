@@ -97,16 +97,35 @@
     ) => {
       if (!map) return;
 
-      const baseUrl = resolve("/events");
       for (const loc of locations) {
-        const popup = L.popup().setContent(
-          `<div style="min-width:140px">
-						<strong style="display:block;margin-bottom:4px">${loc.title}</strong>
-						${loc.city ? `<span style="font-size:0.8em;color:#666">${[loc.city, loc.country].filter(Boolean).join(", ")}</span><br>` : ""}
-						<a href="${baseUrl}/${loc.id}" style="font-size:0.85em;color:#4f46e5">View details →</a>
-					</div>`,
-        );
-        L.marker([loc.lat, loc.lng]).bindPopup(popup).addTo(map);
+        // Leaflet interprets a string setContent() as raw HTML. Construct DOM
+        // nodes and use textContent for API-controlled title/location instead.
+        const container = document.createElement("div");
+        container.style.minWidth = "140px";
+
+        const title = document.createElement("strong");
+        title.textContent = loc.title;
+        title.style.display = "block";
+        title.style.marginBottom = "4px";
+        container.appendChild(title);
+
+        if (loc.city || loc.country) {
+          const where = document.createElement("span");
+          where.textContent = [loc.city, loc.country].filter(Boolean).join(", ");
+          where.style.fontSize = "0.8em";
+          where.style.color = "#666";
+          container.appendChild(where);
+          container.appendChild(document.createElement("br"));
+        }
+
+        const link = document.createElement("a");
+        link.href = resolve("/events/[id]", { id: String(loc.id) });
+        link.textContent = "View details →";
+        link.style.fontSize = "0.85em";
+        link.style.color = "#4f46e5";
+        container.appendChild(link);
+
+        L.marker([loc.lat, loc.lng]).bindPopup(L.popup().setContent(container)).addTo(map);
       }
 
       // Fit bounds if we have markers
