@@ -7,11 +7,12 @@
 	import { checkDueReminders } from '$lib/reminders';
 	import { initAuth, logout, authState } from '$lib/auth';
 	import { initSavedEvents, resetSavedEventsState } from '$lib/saved-events';
+	import { useTmdV4 } from '$lib/api/tmd';
 
 	let { children } = $props();
 
 	const currentYear = new Date().getFullYear();
-	type NavHref = '/' | '/events' | '/calendar' | '/map' | '/djs' | '/saved';
+	type NavHref = '/' | '/events' | '/calendar' | '/map' | '/djs' | '/teachers' | '/blog' | '/saved';
 
 	const navItems: Array<{ href: NavHref; label: string }> = [
 		{ href: '/', label: 'Now' },
@@ -19,6 +20,8 @@
 		{ href: '/calendar', label: 'Calendar' },
 		{ href: '/map', label: 'Map' },
 		{ href: '/djs', label: 'DJs' },
+		...(useTmdV4 ? [{ href: '/teachers' as const, label: 'Teachers' }] : []),
+		{ href: '/blog', label: 'Blog' },
 		{ href: '/saved', label: 'Saved' }
 	];
 
