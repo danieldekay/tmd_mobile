@@ -41,6 +41,14 @@ export function calendarDay(value: string | undefined | null): string | undefine
   ].join('-');
 }
 
+export function todayCalendarDay(now = new Date()): string {
+  return [
+    String(now.getFullYear()).padStart(4, '0'),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0')
+  ].join('-');
+}
+
 /** Compare civil dates, not UTC instants, for an event-opening indicator. */
 export function isFutureCalendarDay(
   value: string | undefined | null,
@@ -48,10 +56,6 @@ export function isFutureCalendarDay(
 ): boolean {
   const day = calendarDay(value);
   if (!day) return false;
-  const today = [
-    String(now.getFullYear()).padStart(4, '0'),
-    String(now.getMonth() + 1).padStart(2, '0'),
-    String(now.getDate()).padStart(2, '0')
-  ].join('-');
+  const today = todayCalendarDay(now);
   return day > today;
 }
