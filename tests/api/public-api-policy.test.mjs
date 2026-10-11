@@ -12,6 +12,7 @@ function request(path, opts = {}) {
 test('cache only explicit anonymous public TMD V4 and WordPress Core collections/details', () => {
   for (const path of [
     '/wp-json/tmd/v4/events?per_page=100&start_date_after=2027-01-01',
+    '/wp-json/tmd/v4/events?registration_start_date_after=2026-10-11&per_page=25',
     '/wp-json/tmd/v4/events/432?_embed=true',
     '/wp-json/tmd/v4/djs/22',
     '/wp-json/tmd/v4/series/3?page=2&per_page=20',
