@@ -121,5 +121,11 @@ if (origin && mobile) {
   } catch (error) {
     report('Anonymous private interactions rejected', false, error.message);
   }
+  try {
+    const response = await fetchPublic(wp + 'user-interactions?per_page=1', [401, 403, 404]);
+    report('Native WordPress private interactions not public', true, 'HTTP ' + response.status);
+  } catch (error) {
+    report('Native WordPress private interactions not public', false, error.message);
+  }
   console.log('\n' + outcomes.filter(result => result.ok).length + '/' + outcomes.length + ' checks passed');
 }
