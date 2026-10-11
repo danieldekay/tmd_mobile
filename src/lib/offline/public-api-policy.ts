@@ -32,6 +32,14 @@ export function isPublicApiCacheCandidate(
 
 export function mayCachePublicResponse(response: Response): boolean {
 	if (!response.ok || response.type === 'opaque') return false;
+	// Do not persist responses that create sessions, or that can change with
+	// Cookie/Authorization. A credentials:omit request alone is not proof that
+	// the WordPress response is identical for all users.
+	if (response.headers.has('set-cookie')) return false;
+	const vary = response.headers.get('vary') ?? '';
+	if (vary.split(',').some((field) => /^(cookie|authorization|\*)$/i.test(field.trim()))) {
+		return false;
+	}
 	const directives = response.headers.get('cache-control') ?? '';
 	if (/\b(private|no-store|no-cache)\b/i.test(directives)) return false;
 	const contentType = response.headers.get('content-type') ?? '';
