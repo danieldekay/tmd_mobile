@@ -75,7 +75,7 @@ test('V4 detail sanitizes HTTP credentials and email header injection', async t 
     },
     _links: {
       djs: [{ href: 'javascript:alert(1)/42', title: 'Malicious DJ link' }],
-      teachers: [{ href: 'https://example.com/user:secret@evil.test/7', title: 'Teacher' }]
+      teachers: [{ href: 'https://user:secret@evil.test/7', title: 'Teacher' }]
     }
   });
   const detail = await getV4Event(10);
@@ -85,7 +85,7 @@ test('V4 detail sanitizes HTTP credentials and email header injection', async t 
     { label: 'Facebook group', href: 'https://example.com/group' }
   ]);
   assert.deepEqual(detail.djs, []);
-  assert.deepEqual(detail.teachers, [{ id: 7, name: 'Teacher', url: 'https://example.com/user:secret@evil.test/7' }]);
+  assert.deepEqual(detail.teachers, []);
 });
 
 test('V4 DJ metadata uses actual tmd_dj prefixed keys', async t => {
