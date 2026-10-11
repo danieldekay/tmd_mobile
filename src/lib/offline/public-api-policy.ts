@@ -11,6 +11,7 @@ const PUBLIC_PATH = [
 const PUBLIC_QUERY = new Set([
 	'page', 'per_page', 'search', 'orderby', 'order', 'country', 'city',
 	'featured', 'start_date_after', 'start_date_before',
+	'registration_start_date_after', 'registration_start_date_before',
 	'_embed', 'embed_mode', 'include_relationships', 'meta_fields',
 	'_fields', 'slug', 'categories', 'tags', 'after', 'before'
 ]);
