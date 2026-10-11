@@ -41,6 +41,11 @@ test('auth, legacy API, private routes, unknown query and unsafe origins bypass 
   }
   assert.equal(isPublicApiCacheCandidate(request('/wp-json/tmd/v4/events',
     { headers: { Authorization: 'Bearer secret' } }), ORIGIN), false);
+  for (const header of ['X-WP-Nonce', 'X-Api-Key', 'X-Auth-Token', 'X-CSRF-Token']) {
+    assert.equal(isPublicApiCacheCandidate(request('/wp-json/wp/v2/posts', {
+      headers: { [header]: 'secret' }
+    }), ORIGIN), false, header);
+  }
   assert.equal(isPublicApiCacheCandidate(request('/wp-json/tmd/v4/events',
     { credentials: 'include' }), ORIGIN), false);
   assert.equal(isPublicApiCacheCandidate(request('/wp-json/tmd/v4/events',
