@@ -55,6 +55,18 @@ test('cache only successful, JSON, publicly cacheable responses', () => {
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' }
   });
   assert.equal(mayCachePublicResponse(pub), true);
+  for (const headers of [
+    { 'Content-Type': 'application/json', 'Set-Cookie': 'session=sensitive; HttpOnly' },
+    { 'Content-Type': 'application/json', Vary: 'Accept-Encoding, Cookie' },
+    { 'Content-Type': 'application/json', Vary: 'Authorization' },
+    { 'Content-Type': 'application/json', Vary: '*' }
+  ]) {
+    assert.equal(mayCachePublicResponse(new Response('[]', { headers })), false,
+      JSON.stringify(headers));
+  }
+  assert.equal(mayCachePublicResponse(new Response('[]', {
+    headers: { 'Content-Type': 'application/json', Vary: 'Accept-Encoding, Origin' }
+  })), true);
   for (const header of ['private', 'no-store', 'no-cache', 'public, no-store']) {
     assert.equal(mayCachePublicResponse(new Response('[]', {
       headers: { 'Content-Type': 'application/json', 'Cache-Control': header }
