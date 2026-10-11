@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  getV4EventPage, getV4Event, getV4Djs, getV4Series, getV4EventRange, getV4Teachers, getV4Teacher,
+  getV4EventPage, getV4Event, getV4Djs, getV4DjsPage, getV4Series, getV4EventRange, getV4Teachers, getV4Teacher,
   normalizeV4Event, TmdV4ApiError
 } from '../../src/lib/api/tmd-v4.ts';
 
@@ -102,6 +102,28 @@ test('V4 DJ metadata uses actual tmd_dj prefixed keys', async t => {
   assert.equal(dj.country, 'Italy');
   assert.equal(dj.website, 'https://dj.example/');
 });
+test('V4 DJs are paged with total counts and stable sorting', async t => {
+  const old = globalThis.fetch;
+  t.after(() => globalThis.fetch = old);
+  let requested;
+  globalThis.fetch = async url => {
+    requested = new URL(url);
+    return respond([
+      { id: 91, title: 'DJ Nineties', meta: { tmd_dj_country: 'Germany' } }
+    ], 200, { 'X-WP-Total': '105', 'X-WP-TotalPages': '3' });
+  };
+  const page = await getV4DjsPage(50, 2);
+  assert.equal(page.page, 2);
+  assert.equal(page.perPage, 50);
+  assert.equal(page.total, 105);
+  assert.equal(page.totalPages, 3);
+  assert.equal(page.items[0].id, 91);
+  assert.equal(page.items[0].country, 'Germany');
+  assert.equal(requested.searchParams.get('page'), '2');
+  assert.equal(requested.searchParams.get('orderby'), 'title');
+  assert.equal(requested.searchParams.get('order'), 'asc');
+});
+
 test('V4 event series calls /series and reads event links', async t => {
   const old = globalThis.fetch;
   t.after(() => globalThis.fetch = old);
