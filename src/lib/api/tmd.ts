@@ -12,6 +12,10 @@ import type {
 	TmdPerson,
 	TmdSeriesEdition
 } from '$lib/types';
+import * as tmdV4 from './tmd-v4';
+
+/** Temporary migration gate; keep V3 active until TMD Core #44/#45 pass. */
+export const useTmdV4 = import.meta.env.PUBLIC_TMD_USE_V4 === 'true';
 
 const DEFAULT_API_BASE_URL = 'https://www.tangomarathons.com/wp-json/tmd/v3';
 
@@ -20,6 +24,7 @@ export const apiBaseUrl = normalizeBaseUrl(
 );
 
 export async function fetchEvents(options: FetchEventsOptions = {}): Promise<TmdEvent[]> {
+	if (useTmdV4) return tmdV4.fetchV4Events(options);
 	const endpoint = new URL(`${apiBaseUrl}/events`);
 	endpoint.searchParams.set('per_page', String(options.limit ?? 12));
 	endpoint.searchParams.set('include_relationships', 'true');
@@ -47,6 +52,7 @@ export async function fetchEvents(options: FetchEventsOptions = {}): Promise<Tmd
 }
 
 export async function fetchEventById(id: number): Promise<TmdEvent> {
+	if (useTmdV4) return tmdV4.fetchV4EventById(id);
 	const endpoint = new URL(`${apiBaseUrl}/events/${id}`);
 	endpoint.searchParams.set('include_relationships', 'true');
 	endpoint.searchParams.set(
@@ -133,6 +139,7 @@ export async function getEvents(
 	perPage = 20,
 	filters?: TmdEventFilters
 ): Promise<TmdEventSummary[]> {
+	if (useTmdV4) return tmdV4.getV4Events(perPage, filters);
 	const endpoint = new URL(`${apiBaseUrl}/events`);
 	endpoint.searchParams.set('per_page', String(perPage));
 	endpoint.searchParams.set('future', '1');
@@ -195,6 +202,7 @@ export async function getEvents(
  * Fetch a single event by ID and return a full detail DTO.
  */
 export async function getEvent(id: string | number): Promise<TmdEventDetail> {
+	if (useTmdV4) return tmdV4.getV4Event(id);
 	const endpoint = new URL(`${apiBaseUrl}/events/${id}`);
 	endpoint.searchParams.set('include_relationships', 'true');
 
@@ -222,6 +230,7 @@ export async function getEvent(id: string | number): Promise<TmdEventDetail> {
  * Fetch a paged DJ list.
  */
 export async function getDjs(perPage = 50): Promise<TmdDj[]> {
+	if (useTmdV4) return tmdV4.getV4Djs(perPage);
 	const endpoint = new URL(`${apiBaseUrl}/djs`);
 	endpoint.searchParams.set('per_page', String(perPage));
 	endpoint.searchParams.set('orderby', 'title');
@@ -243,6 +252,7 @@ export async function getDjs(perPage = 50): Promise<TmdDj[]> {
  * Fetch a single DJ by ID.
  */
 export async function getDj(id: string | number): Promise<TmdDjDetail> {
+	if (useTmdV4) return tmdV4.getV4Dj(id);
 	const endpoint = new URL(`${apiBaseUrl}/djs/${id}`);
 
 	const response = await fetch(endpoint.toString(), {
@@ -269,6 +279,7 @@ export async function getDj(id: string | number): Promise<TmdDjDetail> {
  * Fetch a single event series by ID, including editions if available.
  */
 export async function getEventSeries(id: string | number): Promise<TmdEventSeries> {
+	if (useTmdV4) return tmdV4.getV4Series(id);
 	const endpoint = new URL(`${apiBaseUrl}/event-series/${id}`);
 	endpoint.searchParams.set('include_relationships', 'true');
 
