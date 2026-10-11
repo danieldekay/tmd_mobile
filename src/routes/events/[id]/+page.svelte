@@ -4,6 +4,7 @@
 	import { page } from '$app/state';
 	import { getEvent, TmdNotFoundError, useTmdV4 } from '$lib/api/tmd';
 	import type { TmdEventDetail } from '$lib/types';
+	import { formatCalendarDate } from '$lib/dates/calendar-date';
 	import SaveToggle from '$lib/components/SaveToggle.svelte';
 	import { scheduleReminder, hasReminder, notificationsSupported, removeReminder } from '$lib/reminders';
 	import { incrementBrowseCount } from '$lib/pwa';
@@ -53,24 +54,17 @@
 		}
 	}
 
-	const dateRangeFormatter = new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', year: 'numeric' });
+
 	function formatDateRange(e: TmdEventDetail): string {
 		if (!e.dateStart) return 'Date to be announced';
-		const fmt = (d: string) => dateRangeFormatter.format(new Date(d));
+		const fmt = (d: string) => formatCalendarDate(d, { day: 'numeric', month: 'short', year: 'numeric' });
 		const start = fmt(e.dateStart);
 		const end = e.dateEnd ? fmt(e.dateEnd) : '';
 		return end && end !== start ? `${start} – ${end}` : start;
 	}
 
-	const registrationDateFormatter = new Intl.DateTimeFormat('en', {
-		day: 'numeric',
-		month: 'long',
-		year: 'numeric'
-	});
 	function formatRegistrationDate(dateStr: string): string {
-		const d = new Date(dateStr);
-		if (Number.isNaN(d.getTime())) return dateStr;
-		return registrationDateFormatter.format(d);
+		return formatCalendarDate(dateStr, { day: 'numeric', month: 'long', year: 'numeric' }) || dateStr;
 	}
 
 	function formatLocation(e: TmdEventDetail): string {
