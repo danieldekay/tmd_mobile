@@ -1,0 +1,36 @@
+name: Verify public WordPress API
+
+on:
+  workflow_dispatch:
+    inputs:
+      wordpress_origin:
+        description: 'HTTPS WordPress origin to verify (staging recommended)'
+        required: true
+        type: string
+      mobile_origin:
+        description: 'Browser origin for cross-origin CORS checks'
+        required: true
+        type: string
+        default: 'https://mobile.tangomarathons.com'
+
+permissions:
+  contents: read
+
+jobs:
+  public-rest-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+      - name: Verify V4 and WP Core public GET responses, pagination, CORS and privacy
+        env:
+          WORDPRESS_ORIGIN: ${{ inputs.wordpress_origin }}
+          MOBILE_ORIGIN: ${{ inputs.mobile_origin }}
+        run: |
+          set -euo pipefail
+          node scripts/smoke-public-api.mjs \
+            --origin="$WORDPRESS_ORIGIN" \
+            --client-origin="$MOBILE_ORIGIN"
