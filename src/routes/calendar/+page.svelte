@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { getEvents, useTmdV4 } from '$lib/api/tmd';
 	import { getV4EventRange } from '$lib/api/tmd-v4';
+	import { parseCalendarDate, formatCalendarDate, isFutureCalendarDay } from '$lib/dates/calendar-date';
 	import type { TmdEventSummary } from '$lib/types';
 
 	// ── State ──────────────────────────────────────────────────────────────────
@@ -38,8 +39,7 @@
 
 	// ── Date helpers ───────────────────────────────────────────────────────────
 	function parseDate(value: string): Date | null {
-		const d = new Date(value);
-		return Number.isNaN(d.getTime()) ? null : d;
+		return parseCalendarDate(value);
 	}
 
 	function formatMonthHeader(dateStr: string): string {
@@ -103,7 +103,7 @@
 		const regDate = parseDate(event.registrationDate);
 		if (!regDate) return null;
 		// Registration start date alone cannot prove a registration is open.
-		if (useTmdV4 && regDate.getTime() <= Date.now()) return null;
+		if (useTmdV4) return isFutureCalendarDay(event.registrationDate) ? 'upcoming' : null;
 		return regDate.getTime() <= Date.now() ? 'open' : 'upcoming';
 	}
 </script>
@@ -174,10 +174,10 @@
 									<div class="w-12 shrink-0 text-center">
 										{#if event.dateStart}
 											<span class="block font-display text-2xl font-bold leading-none text-ink">
-												{new Date(event.dateStart).getDate()}
+												{parseCalendarDate(event.dateStart)?.getDate()}
 											</span>
 											<span class="mt-0.5 block text-xs text-muted">
-												{new Intl.DateTimeFormat('en', { month: 'short' }).format(new Date(event.dateStart))}
+												{formatCalendarDate(event.dateStart, { month: 'short' })}
 											</span>
 										{:else}
 											<span class="block text-xs text-muted">TBA</span>
