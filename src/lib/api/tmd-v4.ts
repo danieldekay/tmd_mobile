@@ -216,15 +216,13 @@ export async function getV4EventPage(
   if (filters?.dateBefore) url.searchParams.set('start_date_before', filters.dateBefore);
   if (filters?.country) url.searchParams.set('country', filters.country);
   if (filters?.city) url.searchParams.set('city', filters.city);
-  const result = await collection(url);
-  let items = result.items.map(normalizeV4Event);
-  // V4 does not yet expose authoritative open/closed/full/waitlist status.
-  // Do not infer that registration is "open" from a passed start date.
+  // Registration not started must be filtered by WordPress before pagination,
+  // otherwise filtered pages can look empty while later pages have matches.
   if (filters?.registrationState === 'upcoming') {
-    const today = localToday();
-    items = items.filter(event => !event.registrationDate || event.registrationDate.slice(0, 10) > today);
+    url.searchParams.set('registration_start_date_after', localToday());
   }
-  return { ...result, items };
+  const result = await collection(url);
+  return { ...result, items: result.items.map(normalizeV4Event) };
 }
 /**
  * Bounded multi-page fetch. A requested count larger than 100 must not silently
