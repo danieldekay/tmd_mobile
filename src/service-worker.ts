@@ -11,14 +11,38 @@ declare const self: ServiceWorkerGlobalScope;
 const SHELL_CACHE = `tmd-shell-${version}`;
 const PUBLIC_API_CACHE = `tmd-api-public-v2-${version}`;
 const API_TTL_MS = 60 * 60 * 1000;
-const ASSETS = [...new Set([...build, ...files, '/index.html'])];
+const CRITICAL_ASSETS = [...new Set(build)];
+const OPTIONAL_ASSETS = [...new Set([...files, '/index.html'])]
+	.filter((asset) => !CRITICAL_ASSETS.includes(asset));
+const ASSETS = [...CRITICAL_ASSETS, ...OPTIONAL_ASSETS];
 
 self.addEventListener('install', (event) => {
 	event.waitUntil((async () => {
 		const cache = await caches.open(SHELL_CACHE);
-		await cache.addAll(ASSETS);
-		// When upgrading an installed PWA, wait for the user to accept the
-		// update. PwaPrompts sends SKIP_WAITING and reloads on controllerchange.
+		// SvelteKit fingerprints build assets: a missing JS/CSS chunk must
+		// fail install rather than activate a broken application shell.
+		await cache.addAll(CRITICAL_ASSETS);
+
+		// Some deployment platforms consume static control files such as
+		// /_headers without serving them. Optional failures must not abort
+		// installation of the entire PWA.
+		await Promise.all(OPTIONAL_ASSETS.map(async (asset) => {
+			try { await cache.add(asset); } catch { /* optional asset */ }
+		}));
+
+		// adapter-static emits index.html as a navigation fallback. If the
+		// host does not expose it directly, cache the public application root
+		// under the offline navigation fallback key.
+		if (!(await cache.match('/index.html'))) {
+			try {
+				const shell = await fetch('/', { cache: 'no-store' });
+				if (shell.ok && shell.headers.get('content-type')?.includes('text/html')) {
+					await cache.put('/index.html', shell);
+				}
+			} catch { /* offline fallback unavailable during install */ }
+		}
+		// When upgrading an installed PWA, wait for user consent and then
+		// reload only after controllerchange.
 	})());
 });
 
