@@ -4,6 +4,7 @@
 	import { page } from '$app/state';
 	import { getEventSeries, TmdNotFoundError } from '$lib/api/tmd';
 	import type { TmdEventSeries } from '$lib/types';
+	import { formatCalendarDate, isFutureCalendarDay, calendarDay } from '$lib/dates/calendar-date';
 
 	let series = $state<TmdEventSeries | null>(null);
 	let isLoading = $state(true);
@@ -14,15 +15,15 @@
 
 	const upcomingEditions = $derived.by(() => {
 		if (!series) return [];
-		const now = new Date();
-		return series.editions.filter((e) => !e.dateStart || new Date(e.dateStart) >= now);
+		return series.editions.filter((e) => !e.dateStart || isFutureCalendarDay(e.dateStart) ||
+			calendarDay(e.dateStart) === calendarDay(new Date().toLocaleDateString('en-CA')));
 	});
 
 	const pastEditions = $derived.by(() => {
 		if (!series) return [];
-		const now = new Date();
 		return series.editions
-			.filter((e) => e.dateStart && new Date(e.dateStart) < now)
+			.filter((e) => e.dateStart && !isFutureCalendarDay(e.dateStart) &&
+				calendarDay(e.dateStart) !== calendarDay(new Date().toLocaleDateString('en-CA')))
 			.slice()
 			.reverse();
 	});
@@ -61,11 +62,7 @@
 	function formatDateRange(dateStart?: string, dateEnd?: string): string {
 		if (!dateStart) return 'Date to be announced';
 		const fmt = (d: string) =>
-			new Intl.DateTimeFormat('en', {
-				day: 'numeric',
-				month: 'short',
-				year: 'numeric'
-			}).format(new Date(d));
+			formatCalendarDate(d, { day: 'numeric', month: 'short', year: 'numeric' });
 		const start = fmt(dateStart);
 		const end = dateEnd ? fmt(dateEnd) : '';
 		return end && end !== start ? `${start} – ${end}` : start;
