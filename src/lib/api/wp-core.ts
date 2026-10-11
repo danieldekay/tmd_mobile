@@ -3,8 +3,8 @@
  * TMD domain entities must use tmd-v4.ts, not wp/v2 custom post routes.
  */
 const DEFAULT_WP_ORIGIN = 'https://www.tangomarathons.com';
-const configured = import.meta.env.PUBLIC_TMD_API_BASE_URL as string | undefined;
-const explicit = import.meta.env.PUBLIC_WP_API_BASE_URL as string | undefined;
+const configured = import.meta.env?.PUBLIC_TMD_API_BASE_URL as string | undefined;
+const explicit = import.meta.env?.PUBLIC_WP_API_BASE_URL as string | undefined;
 const origin = (() => {
   if (explicit) return explicit.replace(/\/+$/, '');
   try { return new URL(configured || DEFAULT_WP_ORIGIN).origin + '/wp-json/wp/v2'; }
@@ -38,8 +38,12 @@ export type WpCollection<T> = {
 };
 
 export class WpApiError extends Error {
-  constructor(public status: number, public path: string) {
+  readonly status: number;
+  readonly path: string;
+  constructor(status: number, path: string) {
     super('WordPress REST returned ' + status + ' for ' + path);
+    this.status = status;
+    this.path = path;
     this.name = 'WpApiError';
   }
 }
