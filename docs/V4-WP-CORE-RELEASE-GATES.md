@@ -78,6 +78,13 @@ With a separately built staging app and PUBLIC_TMD_USE_V4=true, test:
 - Cross-origin and public cache response variations; SW and index.html must not trap an installed app on stale content.
 - Accessibility, navigation, error states and performance on slow/mobile networks.
 
+## Directory pagination and external-link safety
+
+- On V4, the DJ directory now follows the X-WP-TotalPages contract, displays the current/total page and exposes Previous/Next rather than silently stopping after the first 50 DJs. The original V3 first-page behavior is retained with a disclosure when results could be incomplete.
+- Check V4 DJ pagination with at least 51 published DJs or a staging fixture returning X-WP-TotalPages ≥ 2; verify pages are distinct and page navigation does not show stale results.
+- Both V3 and V4 metadata-derived external event/profile/contact links now use a shared scheme validator that rejects embedded HTTP credentials and mailto header injection. Test the links in an actual browser; automated API tests do not replace an XSS review.
+- Verify V4 editor-only unpublished and password-protected responses receive private/no-store. **Both** owner-specific V4 interaction list and item responses must be private/no-store even if their post status is publish. The PHP tests cover this contract; staging CDN and browser caches must still be inspected.
+
 ## 5. Rollout and rollback
 
 1. Get core security and discovery PR approved, merged and deployed to the target WordPress staging host.
