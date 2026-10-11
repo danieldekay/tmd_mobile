@@ -56,7 +56,7 @@
 		<ul class="grid gap-3">
 			{#each teachers as teacher (teacher.id)}
 				<li>
-					<a class="panel flex items-center justify-between p-4 hover:bg-soft/50" href={resolve(`/teachers/${teacher.id}`)}>
+					<a class="panel flex items-center justify-between p-4 hover:bg-soft/50" href={resolve('/teachers/[id]', { id: String(teacher.id) })}>
 						<div>
 							<p class="font-semibold text-ink">{teacher.title}</p>
 							{#if teacher.city || teacher.country}
