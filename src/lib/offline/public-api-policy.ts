@@ -21,7 +21,10 @@ export function isPublicApiCacheCandidate(
 ): boolean {
 	if (request.method !== 'GET') return false;
 	if (request.credentials !== 'omit') return false;
-	if (request.headers.has('authorization') || request.headers.has('cookie')) return false;
+	// WordPress can authenticate with a nonce header even when credentials
+	// are omitted. An authenticated or custom-token request is never public.
+	if (['authorization', 'cookie', 'x-wp-nonce', 'x-api-key', 'x-auth-token', 'x-csrf-token']
+		.some((header) => request.headers.has(header))) return false;
 
 	const url = new URL(request.url);
 	if (url.origin !== wordpressOrigin && url.origin !== appOrigin) return false;
