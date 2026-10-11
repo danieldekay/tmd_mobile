@@ -6,6 +6,7 @@
 	import { get } from 'svelte/store';
 	import { getEvents, useTmdV4 } from '$lib/api/tmd';
 	import { getV4EventPage } from '$lib/api/tmd-v4';
+	import { formatCalendarDate } from '$lib/dates/calendar-date';
 	import type { TmdEventFilters, TmdEventSummary } from '$lib/types';
 	import SaveToggle from '$lib/components/SaveToggle.svelte';
 	import { incrementBrowseCount } from '$lib/pwa';
@@ -157,9 +158,7 @@
 	function formatEventDateRange(event: TmdEventSummary): string {
 		if (!event.dateStart) return 'Date to be announced';
 		const fmt = (d: string) =>
-			new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', year: 'numeric' }).format(
-				new Date(d)
-			);
+			formatCalendarDate(d, { day: 'numeric', month: 'short', year: 'numeric' });
 		const start = fmt(event.dateStart);
 		const end = event.dateEnd ? fmt(event.dateEnd) : '';
 		return end && end !== start ? `${start} – ${end}` : start;
