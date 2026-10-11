@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  getV4EventPage, getV4Event, getV4Djs, getV4Series,
+  getV4EventPage, getV4Event, getV4Djs, getV4Series, getV4EventRange, getV4Teachers, getV4Teacher,
   normalizeV4Event, TmdV4ApiError
 } from '../../src/lib/api/tmd-v4.ts';
 
@@ -108,4 +108,79 @@ test('coordinates reject out-of-range and URLs must use safe schemes', () => {
 });
 test('open-registration filter refuses unsupported authoritative status', async () => {
   await assert.rejects(getV4EventPage(20, { registrationState: 'open' }), /does not yet provide/);
+});
+
+
+test('V4 range traverses multiple pages and makes truncation explicit', async t => {
+  const previous = globalThis.fetch;
+  t.after(() => globalThis.fetch = previous);
+  const pages = [];
+  globalThis.fetch = async url => {
+    const request = new URL(url);
+    const current = Number(request.searchParams.get('page'));
+    pages.push(current);
+    const start = (current - 1) * 100;
+    return respond(Array.from({ length: 100 }, (_, i) => event(start + i + 1)), 200, {
+      'X-WP-Total': '300',
+      'X-WP-TotalPages': '3'
+    });
+  };
+  const result = await getV4EventRange(200, { dateAfter: '2027-01-01' });
+  assert.deepEqual(pages, [1, 2]);
+  assert.equal(result.items.length, 200);
+  assert.equal(result.items[0].id, 1);
+  assert.equal(result.items[199].id, 200);
+  assert.equal(result.complete, false);
+  assert.equal(result.truncated, true);
+});
+
+test('V4 teacher list uses controller meta keys, detail uses safe links', async t => {
+  const previous = globalThis.fetch;
+  t.after(() => globalThis.fetch = previous);
+  const teacher = {
+    id: 8, title: 'Listed Name', meta: {
+      first_name: 'Ada', last_name: 'Luna', city: 'Turin', country: 'Italy',
+      website: 'javascript:alert(1)', bio_short: 'Teacher biography'
+    }
+  };
+  globalThis.fetch = async url => respond(String(url).includes('/teachers/8')
+    ? teacher : [teacher]);
+  const page = await getV4Teachers(20);
+  assert.equal(page.items[0].title, 'Ada Luna');
+  const detail = await getV4Teacher(8);
+  assert.equal(detail.bio, 'Teacher biography');
+  assert.equal(detail.website, undefined);
+  assert.equal(detail.socialLinks.length, 0);
+});
+
+test('V4 series pages include dated editions from embedded relations', async t => {
+  const previous = globalThis.fetch;
+  t.after(() => globalThis.fetch = previous);
+  const calls = [];
+  globalThis.fetch = async url => {
+    const request = new URL(url);
+    calls.push(request.searchParams.get('page') ?? '1');
+    const first = !request.searchParams.has('page');
+    return respond({
+      id: 99,
+      title: 'Festival series',
+      _embedded: {
+        events: [{
+          id: first ? 20 : 21,
+          title: first ? 'Old' : 'New',
+          start_date: first ? '2025-08-01' : '2026-08-01',
+          city: 'Vienna', country: 'Austria'
+        }],
+        events_pagination: {
+          current_page: first ? 1 : 2,
+          has_next: first
+        }
+      }
+    });
+  };
+  const series = await getV4Series(99);
+  assert.deepEqual(calls, ['1', '2']);
+  assert.equal(series.editions[0].dateStart, '2025-08-01');
+  assert.equal(series.editions[1].dateStart, '2026-08-01');
+  assert.equal(series.editions[1].city, 'Vienna');
 });
