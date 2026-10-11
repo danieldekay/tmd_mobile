@@ -101,6 +101,21 @@ export type TmdDjDetail = TmdDj & {
 };
 
 // Slim edition DTO used in event series detail
+export type TmdTeacher = {
+	id: number;
+	title: string;
+	slug?: string;
+	city?: string;
+	country?: string;
+	role?: string;
+};
+
+export type TmdTeacherDetail = TmdTeacher & {
+	bio?: string;
+	website?: string;
+	socialLinks: TmdContactLink[];
+};
+
 export type TmdSeriesEdition = {
 	id: number;
 	title: string;
