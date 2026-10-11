@@ -1,3 +1,15 @@
+## 0. V4 + WP Core migration gates (2026-10-11)
+
+- [x] 0.1 Decide TMD Core V4 for tango entities; native WordPress Core REST for editorial content ([#51](https://github.com/danieldekay/tmd_mobile/issues/51))
+- [x] 0.2 Add first read-only V4 and WordPress Core client modules, disabled V4 feature flag and contract test scaffolding (branch `feat/v4-wp-core-migration-foundation`; not merged)
+- [ ] 0.3 Require published-only V4 reads and user-interaction ownership, verify production/staging before enabling V4 ([tmd_core#44](https://github.com/danieldekay/tmd_core/issues/44))
+- [ ] 0.4 Stabilize V4 collection, relationship, metadata, geo, date and series URL contract ([tmd_core#45](https://github.com/danieldekay/tmd_core/issues/45))
+- [ ] 0.5 Run V4/WP Core fixtures, type-check/build, CORS and actual browser smoke tests ([#54](https://github.com/danieldekay/tmd_mobile/issues/54))
+- [ ] 0.6 Port teacher route to V4, not `/tmd/v3/teachers`; add blog/page/media/taxonomy UI routes ([#53](https://github.com/danieldekay/tmd_mobile/issues/53))
+- [ ] 0.7 Publish consent/SEO/security decisions and remove V3 after staged cutover with rollback ([#54](https://github.com/danieldekay/tmd_mobile/issues/54))
+
+> Tasks 1–7 below predate the architecture decision. Where they say V3 or `{@html}` without sanitization, follow the revised gates above instead. No unchecked task below should be treated as completed.
+
 ## 1. Types and API Layer
 
 - [ ] 1.1 Verify `/wp-json/tmd/v3/teachers` exists on local dev (`http://localhost:10014`) and inspect response shape
