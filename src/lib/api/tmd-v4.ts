@@ -8,7 +8,7 @@
 import type {
   FetchEventsOptions, TmdApiRecord, TmdContactLink, TmdDj, TmdDjDetail,
   TmdEvent, TmdEventDetail, TmdEventFilters, TmdEventSeries, TmdEventSummary,
-  TmdPerson, TmdSeriesEdition
+  TmdPerson, TmdSeriesEdition, TmdTeacher, TmdTeacherDetail
 } from '$lib/types';
 
 const DEFAULT_V4_BASE_URL = 'https://www.tangomarathons.com/wp-json/tmd/v4';
@@ -251,6 +251,36 @@ export async function getV4Dj(idValue: string | number): Promise<TmdDjDetail> {
   const item = record((await readJson(url)).data, 'DJ detail');
   return { ...dj(item), bio: from(item, ['tmd_dj_about_the_dj', 'abstract']) };
 }
+function teacher(item: JsonObject): TmdTeacher {
+  const fullName = [from(item, ['first_name']), from(item, ['last_name'])].filter(Boolean).join(' ');
+  return {
+    id: ensureId(item), title: fullName || from(item, ['nickname']) ||
+      string(item.title) || 'Unnamed teacher',
+    slug: string(item.slug), city: from(item, ['city']),
+    country: from(item, ['country']), role: from(item, ['role'])
+  };
+}
+export async function getV4Teachers(perPage = 50, page = 1): Promise<TmdV4Page<TmdTeacher>> {
+  const url = new URL(tmdV4BaseUrl + '/teachers');
+  url.searchParams.set('per_page', String(intParam(perPage, 1, 100)));
+  url.searchParams.set('page', String(intParam(page, 1, 100000)));
+  url.searchParams.set('orderby', 'title');
+  url.searchParams.set('order', 'asc');
+  const result = await collection(url);
+  return { ...result, items: result.items.map(teacher) };
+}
+export async function getV4Teacher(idValue: string | number): Promise<TmdTeacherDetail> {
+  const url = new URL(tmdV4BaseUrl + '/teachers/' + encodeURIComponent(String(idValue)));
+  const item = record((await readJson(url)).data, 'teacher detail');
+  return {
+    ...teacher(item), bio: from(item, ['bio_short']),
+    website: validLink(from(item, ['website'])),
+    socialLinks: links(item, [
+      ['website', 'Website'], ['facebook_profile', 'Facebook'], ['instagram', 'Instagram']
+    ])
+  };
+}
+
 export async function getV4Series(idValue: string | number): Promise<TmdEventSeries> {
   const url = new URL(tmdV4BaseUrl + '/series/' + encodeURIComponent(String(idValue)));
   const item = record((await readJson(url)).data, 'series detail');
