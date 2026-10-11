@@ -13,6 +13,12 @@
 - The backend draft PR checks PHP 8.4 syntax and runs targeted PHPUnit authorization and V4 discovery contract tests.
 - These code tests cannot replace a deployed WordPress integration test. Do not merge and enable V4 based on green unit tests alone.
 
+## Critical prerequisite: active V3 security patch
+
+Before any V4 rollout, review and release [TMD Core hotfix PR #47](https://github.com/danieldekay/tmd_core/pull/47), tracked in [security issue #48](https://github.com/danieldekay/tmd_core/issues/48). A code-level review discovered that V3 interaction-list queries must be owner-scoped through the actual `get_query_args()` override called by `BaseController::get_items()`; merely patching `prepare_query()` does not change live collection results. The hotfix also removes the generic native WordPress REST exposure of private interactions and caps private collection page sizes.
+
+Verify this with ordinary test accounts A and B using the real `/wp-json/tmd/v3/user-interactions?user_id=B` and `/wp-json/tmd/v3/me/interactions` routes, plus the native `/wp-json/wp/v2/user-interactions` route. Account A must never retrieve B's interaction rows. Do not record credentials or response bodies. Unit CI on the code does not establish live production remediation.
+
 ## 1. Read-only live API smoke test
 
 Use a reachable HTTPS WordPress staging origin with V4 installed and published test data. In this branch:
