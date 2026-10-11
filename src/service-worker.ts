@@ -9,7 +9,7 @@ import { isPublicApiCacheCandidate, mayCachePublicResponse } from '$lib/offline/
 declare const self: ServiceWorkerGlobalScope;
 
 const SHELL_CACHE = `tmd-shell-${version}`;
-const PUBLIC_API_CACHE = `tmd-api-public-v2-${version}`;
+const PUBLIC_API_CACHE = `tmd-api-public-v3-${version}`;
 const API_TTL_MS = 60 * 60 * 1000;
 const CRITICAL_ASSETS = [...new Set(build)];
 const OPTIONAL_ASSETS = [...new Set([...files, '/index.html'])]
