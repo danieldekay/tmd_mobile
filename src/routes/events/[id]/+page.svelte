@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { getEvent, TmdNotFoundError } from '$lib/api/tmd';
+	import { getEvent, TmdNotFoundError, useTmdV4 } from '$lib/api/tmd';
 	import type { TmdEventDetail } from '$lib/types';
 	import SaveToggle from '$lib/components/SaveToggle.svelte';
 	import { scheduleReminder, hasReminder, notificationsSupported, removeReminder } from '$lib/reminders';
@@ -91,7 +91,7 @@
 			},
 			{
 				label: 'Teachers',
-				people: e.teachers.map((p) => ({ ...p, internalHref: null }))
+				people: e.teachers.map((p) => ({ ...p, internalHref: useTmdV4 ? resolve(`/teachers/${p.id}`) : null }))
 			},
 			{
 				label: 'Series',
