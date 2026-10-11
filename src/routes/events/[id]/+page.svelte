@@ -5,6 +5,7 @@
 	import { getEvent, TmdNotFoundError, useTmdV4 } from '$lib/api/tmd';
 	import type { TmdEventDetail } from '$lib/types';
 	import { formatCalendarDate } from '$lib/dates/calendar-date';
+	import { safeExternalHref } from '$lib/security/public-links';
 	import SaveToggle from '$lib/components/SaveToggle.svelte';
 	import { scheduleReminder, hasReminder, notificationsSupported, removeReminder } from '$lib/reminders';
 	import { incrementBrowseCount } from '$lib/pwa';
@@ -95,7 +96,9 @@
 	}
 
 	function openExternalLink(href: string) {
-		globalThis.open(href, href.startsWith('mailto:') ? '_self' : '_blank', 'noopener,noreferrer');
+		const safeHref = safeExternalHref(href);
+		if (!safeHref) return;
+		globalThis.open(safeHref, safeHref.startsWith('mailto:') ? '_self' : '_blank', 'noopener,noreferrer');
 	}
 
 	async function toggleReminder() {
