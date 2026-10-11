@@ -36,6 +36,9 @@ jobs:
       - name: API and public-cache regression tests
         run: npm test
 
+      - name: Validate read-only API smoke runner
+        run: node --check scripts/smoke-public-api.mjs
+
       - name: Build (V3 production default)
         env:
           # Intentional hard stop: enable V4 only in a separate gated rollout.
