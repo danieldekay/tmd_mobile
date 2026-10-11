@@ -4,7 +4,8 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { get } from 'svelte/store';
-	import { getEvents } from '$lib/api/tmd';
+	import { getEvents, useTmdV4 } from '$lib/api/tmd';
+	import { getV4EventPage } from '$lib/api/tmd-v4';
 	import type { TmdEventFilters, TmdEventSummary } from '$lib/types';
 	import SaveToggle from '$lib/components/SaveToggle.svelte';
 	import { incrementBrowseCount } from '$lib/pwa';
@@ -14,6 +15,11 @@
 	let isLoading = $state(true);
 	let errorMessage = $state<string | null>(null);
 	let isOffline = $state(false);
+	let currentV4Page = $state(1);
+	let hasMoreV4 = $state(false);
+	let isLoadingMore = $state(false);
+	let loadMoreError = $state<string | null>(null);
+	let loadGeneration = 0;
 
 	// Filter state (mirrored to/from URL params)
 	let filterCountry = $state('');
@@ -31,9 +37,6 @@
 			(filterRegState !== 'all' && filterRegState !== undefined)
 	);
 
-	// Available country options derived from loaded events
-	let availableCountries = $state<string[]>([]);
-
 	// ── URL sync helpers ───────────────────────────────────────────────────────
 	function readFiltersFromUrl(): void {
 		const params = get(page).url.searchParams;
@@ -43,7 +46,7 @@
 		filterDateBefore = params.get('before') ?? '';
 		const reg = params.get('reg');
 		filterRegState =
-			reg === 'open' || reg === 'upcoming' ? reg : 'all';
+			(reg === 'upcoming' || (reg === 'open' && !useTmdV4)) ? reg : 'all';
 	}
 
 	function buildFilterParams(): TmdEventFilters {
@@ -81,22 +84,56 @@
 
 	// ── Load logic ─────────────────────────────────────────────────────────────
 	async function loadEvents(): Promise<void> {
+		const generation = ++loadGeneration;
 		isLoading = true;
 		errorMessage = null;
+		loadMoreError = null;
+		hasMoreV4 = false;
 		try {
 			const filters = buildFilterParams();
-			events = await getEvents(50, filters);
-			incrementBrowseCount();
-			// Derive available countries from the full unfiltered set when no country filter active
-			if (!filterCountry) {
-				const countries = [...new Set(events.map((e) => e.country).filter((c): c is string => Boolean(c)))].sort();
-				availableCountries = countries;
+			if (useTmdV4) {
+				const result = await getV4EventPage(50, filters, 1);
+				if (generation !== loadGeneration) return;
+				events = result.items;
+				currentV4Page = 1;
+				hasMoreV4 = result.totalPages !== undefined
+					? result.page < result.totalPages
+					: result.items.length === 50;
+			} else {
+				const result = await getEvents(50, filters);
+				if (generation !== loadGeneration) return;
+				events = result;
 			}
+			incrementBrowseCount();
 		} catch (error) {
+			if (generation !== loadGeneration) return;
 			errorMessage =
 				error instanceof Error ? error.message : 'Could not load events from TMD Core.';
 		} finally {
-			isLoading = false;
+			if (generation === loadGeneration) isLoading = false;
+		}
+	}
+
+	async function loadMoreEvents(): Promise<void> {
+		if (!useTmdV4 || !hasMoreV4 || isLoadingMore || isLoading) return;
+		const generation = loadGeneration;
+		const nextPage = currentV4Page + 1;
+		isLoadingMore = true;
+		loadMoreError = null;
+		try {
+			const result = await getV4EventPage(50, buildFilterParams(), nextPage);
+			if (generation !== loadGeneration) return;
+			const ids = new Set(events.map(event => event.id));
+			events = [...events, ...result.items.filter(event => !ids.has(event.id))];
+			currentV4Page = nextPage;
+			hasMoreV4 = result.totalPages !== undefined
+				? nextPage < result.totalPages
+				: result.items.length === 50;
+		} catch (error) {
+			if (generation !== loadGeneration) return;
+			loadMoreError = error instanceof Error ? error.message : 'Could not load more events.';
+		} finally {
+			isLoadingMore = false;
 		}
 	}
 
@@ -168,33 +205,19 @@
 	<!-- Filter bar -->
 	<div class="panel p-4 space-y-3" aria-label="Filter events">
 		<div class="grid grid-cols-2 gap-2">
-			<!-- Country filter -->
+			<!-- Country must accept global values beyond the currently loaded page. -->
 			<div>
 				<label for="filter-country" class="eyebrow mb-1 block">Country</label>
-				{#if availableCountries.length > 0}
-					<select
-						id="filter-country"
-						class="w-full rounded-control border border-line bg-canvas px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary"
-						bind:value={filterCountry}
-						onchange={() => void applyFilters()}
-					>
-						<option value="">All countries</option>
-						{#each availableCountries as country (country)}
-							<option value={country}>{country}</option>
-						{/each}
-					</select>
-				{:else}
-					<input
-						id="filter-country"
-						type="text"
-						placeholder="e.g. Germany"
-						class="w-full rounded-control border border-line bg-canvas px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary"
-						bind:value={filterCountry}
-						onchange={() => void applyFilters()}
-					/>
-				{/if}
+				<input
+					id="filter-country"
+					type="text"
+					placeholder="e.g. Germany"
+					class="w-full rounded-control border border-line bg-canvas px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary"
+					bind:value={filterCountry}
+					onchange={() => void applyFilters()}
+				/>
 			</div>
-
+			
 			<!-- City filter -->
 			<div>
 				<label for="filter-city" class="eyebrow mb-1 block">City</label>
@@ -237,7 +260,7 @@
 		<div>
 			<p class="eyebrow mb-1">Registration</p>
 			<div class="flex gap-2" role="group" aria-label="Registration state filter">
-				{#each [['all', 'All'], ['open', 'Open now'], ['upcoming', 'Opening soon']] as [val, label] (val)}
+				{#each (useTmdV4 ? [['all', 'All'], ['upcoming', 'Not yet started']] : [['all', 'All'], ['open', 'Open now'], ['upcoming', 'Opening soon']]) as [val, label] (val)}
 					<button
 						type="button"
 						class="rounded-control px-3 py-1.5 text-xs font-semibold transition-colors {filterRegState === val ? 'bg-primary text-white' : 'bg-soft text-ink hover:bg-line'}"
@@ -249,6 +272,10 @@
 				{/each}
 			</div>
 		</div>
+
+		{#if useTmdV4}
+			<p class="text-xs text-muted">Current registration-open status is not available from TMD V4.</p>
+		{/if}
 
 		<!-- Clear button -->
 		{#if hasActiveFilters}
@@ -309,7 +336,7 @@
 		<!-- Offline cache banner -->
 		{#if isOffline}
 			<div class="rounded-control border border-line bg-soft px-4 py-2 text-sm text-muted" role="status">
-				You are offline. Showing cached events.
+				You are offline. Previously cached public results may be available.
 			</div>
 		{/if}
 		<!-- Event list -->
@@ -341,6 +368,18 @@
 				</li>
 			{/each}
 		</ul>
+		{#if useTmdV4 && hasMoreV4}
+			<div class="space-y-2 text-center">
+				<p class="text-xs text-muted">Showing {events.length} matching events. More results are available.</p>
+				<button class="button-secondary" type="button" disabled={isLoadingMore}
+					onclick={() => void loadMoreEvents()}>
+					{isLoadingMore ? 'Loading more…' : 'Load more events'}
+				</button>
+				{#if loadMoreError}
+					<p class="text-sm text-accent" role="alert">{loadMoreError}</p>
+				{/if}
+			</div>
+		{/if}
 	{/if}
 </section>
 
