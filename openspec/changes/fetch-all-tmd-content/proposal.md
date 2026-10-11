@@ -1,3 +1,5 @@
+> **Architecture revision (2026-10-11):** Adopt TMD Core REST **V4** for domain entities (events, DJs, teachers, series) and WordPress Core REST **wp/v2** for posts, pages, media and taxonomies. The V3 teacher endpoint and dual API assumptions below are historical; implementation must use the typed V4 client. Tracked by [#51](https://github.com/danieldekay/tmd_mobile/issues/51), [#52](https://github.com/danieldekay/tmd_mobile/issues/52), [#53](https://github.com/danieldekay/tmd_mobile/issues/53) and [#54](https://github.com/danieldekay/tmd_mobile/issues/54). The V4 feature flag stays disabled until backend security/contract release gates are complete.
+
 ## Why
 
 TMD Mobile currently covers events, DJs, and event series — but misses teachers, WordPress blog posts, and static pages that the main TMD4 site exposes. Users browsing the mobile app cannot discover teacher profiles, read editorial content, or view informational pages without leaving the app.

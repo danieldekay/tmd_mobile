@@ -1,3 +1,5 @@
+> **Superseding decision — 2026-10-11:** The domain source is TMD V4, **not V3**. V4 uses a top-level collection array with WP pagination headers; event/DJ fields live under `meta`; V4 `title` is a string; registered series route is `/series`. Native WordPress `wp/v2` remains the source for posts, pages, media and editorial taxonomies. Public WordPress rendered HTML is **not inherently safe to inject**; require a reviewed DOMPurify policy and safe link normalization. Correct source-specific contract fixtures, cross-origin permissions and published-only reads are prerequisites. See [issue #51](https://github.com/danieldekay/tmd_mobile/issues/51).
+
 ## Context
 
 TMD Mobile already fetches events, DJs, and event series via TMD Core REST v3. Three content categories remain unexposed in the mobile app: **teachers** (a TMD Core custom post type at `/wp-json/tmd/v3/teachers`), **blog posts** (WordPress standard posts at `/wp-json/wp/v2/posts`), and **WordPress pages** (at `/wp-json/wp/v2/pages`).

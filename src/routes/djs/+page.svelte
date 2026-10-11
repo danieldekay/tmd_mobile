@@ -1,29 +1,51 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
-	import { getDjs } from '$lib/api/tmd';
+	import { getDjs, useTmdV4 } from '$lib/api/tmd';
+	import { getV4DjsPage } from '$lib/api/tmd-v4';
 	import type { TmdDj } from '$lib/types';
 
 	let djs = $state<TmdDj[]>([]);
 	let isLoading = $state(true);
 	let errorMessage = $state<string | null>(null);
+	let currentPage = $state(1);
+	let totalPages = $state<number | undefined>();
+	let loadGeneration = 0;
 
 	onMount(() => {
 		void load();
 	});
 
 	async function load() {
+		const generation = ++loadGeneration;
 		isLoading = true;
 		errorMessage = null;
 		try {
-			djs = await getDjs();
+			if (useTmdV4) {
+				const result = await getV4DjsPage(50, currentPage);
+				if (generation !== loadGeneration) return;
+				djs = result.items;
+				totalPages = result.totalPages;
+			} else {
+				const result = await getDjs();
+				if (generation !== loadGeneration) return;
+				djs = result;
+			}
 		} catch (err) {
+			if (generation !== loadGeneration) return;
 			errorMessage =
 				err instanceof Error ? err.message : 'Could not load DJs from TMD Core.';
 		} finally {
-			isLoading = false;
+			if (generation === loadGeneration) isLoading = false;
 		}
 	}
+
+	function changePage(next: number) {
+		if (!useTmdV4 || next < 1 || (totalPages !== undefined && next > totalPages)) return;
+		currentPage = next;
+		void load();
+	}
+
 </script>
 
 <svelte:head>
@@ -78,6 +100,17 @@
 				</li>
 			{/each}
 		</ul>
+	{/if}
+	{#if useTmdV4 && totalPages !== undefined && totalPages > 1}
+		<nav class="flex items-center justify-between gap-3" aria-label="DJ pages">
+			<button class="button-secondary" type="button" disabled={isLoading || currentPage <= 1} onclick={() => changePage(currentPage - 1)}>Previous</button>
+			<p class="text-sm text-muted">Page {currentPage} of {totalPages}</p>
+			<button class="button-secondary" type="button" disabled={isLoading || currentPage >= totalPages} onclick={() => changePage(currentPage + 1)}>Next</button>
+		</nav>
+	{:else if !isLoading && !errorMessage && djs.length > 0 && ((useTmdV4 && totalPages === undefined) || (!useTmdV4 && djs.length >= 50))}
+		<p class="text-sm text-muted" role="status">
+			Showing the first {djs.length} DJs. The server has not confirmed that this is the complete directory.
+		</p>
 	{/if}
 </section>
 

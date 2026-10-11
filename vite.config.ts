@@ -8,6 +8,8 @@ const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 
 };
 
 export default defineConfig({
+	// Vite exposes only VITE_* by default. TMD intentionally uses PUBLIC_*.
+	envPrefix: ['VITE_', 'PUBLIC_'],
 	define: {
 		__APP_VERSION__: JSON.stringify(pkg.version)
 	},

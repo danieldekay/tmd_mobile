@@ -1,20 +1,30 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
-	import { getEvents } from '$lib/api/tmd';
+	import { getEvents, useTmdV4 } from '$lib/api/tmd';
+	import { getV4EventRange } from '$lib/api/tmd-v4';
+	import { parseCalendarDate, formatCalendarDate, isFutureCalendarDay } from '$lib/dates/calendar-date';
 	import type { TmdEventSummary } from '$lib/types';
 
 	// ── State ──────────────────────────────────────────────────────────────────
 	let events = $state<TmdEventSummary[]>([]);
 	let isLoading = $state(true);
 	let errorMessage = $state<string | null>(null);
+	let resultTruncated = $state(false);
 
 	// ── Load ───────────────────────────────────────────────────────────────────
 	async function loadEvents(): Promise<void> {
 		isLoading = true;
 		errorMessage = null;
 		try {
-			events = await getEvents(100);
+			if (useTmdV4) {
+				const result = await getV4EventRange(400);
+				events = result.items;
+				resultTruncated = result.truncated;
+			} else {
+				events = await getEvents(100);
+				resultTruncated = events.length === 100;
+			}
 		} catch (error) {
 			errorMessage =
 				error instanceof Error ? error.message : 'Could not load events from TMD Core.';
@@ -29,8 +39,7 @@
 
 	// ── Date helpers ───────────────────────────────────────────────────────────
 	function parseDate(value: string): Date | null {
-		const d = new Date(value);
-		return Number.isNaN(d.getTime()) ? null : d;
+		return parseCalendarDate(value);
 	}
 
 	function formatMonthHeader(dateStr: string): string {
@@ -93,6 +102,8 @@
 		if (!event.registrationDate) return null;
 		const regDate = parseDate(event.registrationDate);
 		if (!regDate) return null;
+		// Registration start date alone cannot prove a registration is open.
+		if (useTmdV4) return isFutureCalendarDay(event.registrationDate) ? 'upcoming' : null;
 		return regDate.getTime() <= Date.now() ? 'open' : 'upcoming';
 	}
 </script>
@@ -106,6 +117,9 @@
 		<h1 class="font-display text-4xl font-bold">Calendar</h1>
 		<p class="mt-1 text-muted">Upcoming tango events by month</p>
 	</div>
+	{#if resultTruncated && !isLoading}
+		<p class="panel p-3 text-sm text-muted" role="status">The directory has more events than this calendar has loaded. <a class="text-primary underline" href={resolve('/events')}>Browse all events</a>.</p>
+	{/if}
 
 	{#if isLoading}
 		<!-- Skeleton -->
@@ -160,10 +174,10 @@
 									<div class="w-12 shrink-0 text-center">
 										{#if event.dateStart}
 											<span class="block font-display text-2xl font-bold leading-none text-ink">
-												{new Date(event.dateStart).getDate()}
+												{parseCalendarDate(event.dateStart)?.getDate()}
 											</span>
 											<span class="mt-0.5 block text-xs text-muted">
-												{new Intl.DateTimeFormat('en', { month: 'short' }).format(new Date(event.dateStart))}
+												{formatCalendarDate(event.dateStart, { month: 'short' })}
 											</span>
 										{:else}
 											<span class="block text-xs text-muted">TBA</span>
@@ -191,7 +205,7 @@
 												<span
 													class="rounded-control px-2 py-0.5 font-semibold {status === 'open' ? 'bg-primary/10 text-primary' : 'bg-soft text-muted'}"
 												>
-													{status === 'open' ? 'Registration open' : 'Reg. from ' + formatDay(event.registrationDate)}
+													{status === 'open' ? 'Registration open' : 'Registration starts ' + formatDay(event.registrationDate)}
 												</span>
 											</div>
 										{/if}

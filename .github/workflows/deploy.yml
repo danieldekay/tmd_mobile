@@ -14,6 +14,8 @@ permissions:
 
 jobs:
   deploy:
+    # Manual runs on PR branches must not deploy to the production domain.
+    if: github.ref == 'refs/heads/main'
     name: Deploy Worker Assets
     runs-on: ubuntu-24.04
     steps:
@@ -28,7 +30,19 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Build
+      - name: Typecheck and validate routes
+        run: npm run check
+
+      - name: API and public-cache regression tests
+        run: npm test
+
+      - name: Validate read-only API smoke runner
+        run: node --check scripts/smoke-public-api.mjs
+
+      - name: Build (V3 production default)
+        env:
+          # Intentional hard stop: enable V4 only in a separate gated rollout.
+          PUBLIC_TMD_USE_V4: 'false'
         run: npm run build
 
       - name: Deploy

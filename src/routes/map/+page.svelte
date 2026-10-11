@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { resolve } from "$app/paths";
-  import { getEvents } from "$lib/api/tmd";
+  import { getEvents, useTmdV4 } from "$lib/api/tmd";
+  import { getV4EventRange } from "$lib/api/tmd-v4";
   import type { TmdEventLocation, TmdEventSummary } from "$lib/types";
 
   // ── State ──────────────────────────────────────────────────────────────────
@@ -11,6 +12,7 @@
   let mapEl = $state<HTMLDivElement | null>(null);
   let mappedCount = $state(0);
   let omittedCount = $state(0);
+  let resultTruncated = $state(false);
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function toLocation(event: TmdEventSummary): TmdEventLocation | null {
@@ -32,7 +34,14 @@
     let map: import("leaflet").Map | undefined;
 
     const loadLocations = async () => {
-      const events = await getEvents(100);
+      const events = useTmdV4
+        ? await (async () => {
+            const result = await getV4EventRange(400);
+            resultTruncated = result.truncated;
+            return result.items;
+          })()
+        : await getEvents(100);
+      if (!useTmdV4) resultTruncated = events.length === 100;
       const locations: TmdEventLocation[] = [];
       let omitted = 0;
       for (const event of events) {
@@ -97,16 +106,35 @@
     ) => {
       if (!map) return;
 
-      const baseUrl = resolve("/events");
       for (const loc of locations) {
-        const popup = L.popup().setContent(
-          `<div style="min-width:140px">
-						<strong style="display:block;margin-bottom:4px">${loc.title}</strong>
-						${loc.city ? `<span style="font-size:0.8em;color:#666">${[loc.city, loc.country].filter(Boolean).join(", ")}</span><br>` : ""}
-						<a href="${baseUrl}/${loc.id}" style="font-size:0.85em;color:#4f46e5">View details →</a>
-					</div>`,
-        );
-        L.marker([loc.lat, loc.lng]).bindPopup(popup).addTo(map);
+        // Leaflet interprets a string setContent() as raw HTML. Construct DOM
+        // nodes and use textContent for API-controlled title/location instead.
+        const container = document.createElement("div");
+        container.style.minWidth = "140px";
+
+        const title = document.createElement("strong");
+        title.textContent = loc.title;
+        title.style.display = "block";
+        title.style.marginBottom = "4px";
+        container.appendChild(title);
+
+        if (loc.city || loc.country) {
+          const where = document.createElement("span");
+          where.textContent = [loc.city, loc.country].filter(Boolean).join(", ");
+          where.style.fontSize = "0.8em";
+          where.style.color = "#666";
+          container.appendChild(where);
+          container.appendChild(document.createElement("br"));
+        }
+
+        const link = document.createElement("a");
+        link.href = resolve("/events/[id]", { id: String(loc.id) });
+        link.textContent = "View details →";
+        link.style.fontSize = "0.85em";
+        link.style.color = "#4f46e5";
+        container.appendChild(link);
+
+        L.marker([loc.lat, loc.lng]).bindPopup(L.popup().setContent(container)).addTo(map);
       }
 
       // Fit bounds if we have markers
@@ -190,6 +218,12 @@
       aria-label="Event map"
     ></div>
   </div>
+
+  {#if !isLoading && resultTruncated}
+    <p class="panel p-3 text-sm text-muted" role="status">
+      More events exist than this map has loaded. <a class="text-primary underline" href={resolve("/events")}>Browse all events</a> to continue through the directory.
+    </p>
+  {/if}
 
   {#if tileError}
     <!-- Tile unavailable fallback -->

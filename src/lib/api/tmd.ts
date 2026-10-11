@@ -12,6 +12,11 @@ import type {
 	TmdPerson,
 	TmdSeriesEdition
 } from '$lib/types';
+import * as tmdV4 from './tmd-v4';
+import { safeHttpUrl, safeMailto } from '$lib/security/public-links';
+
+/** Temporary migration gate; keep V3 active until TMD Core #44/#45 pass. */
+export const useTmdV4 = import.meta.env.PUBLIC_TMD_USE_V4 === 'true';
 
 const DEFAULT_API_BASE_URL = 'https://www.tangomarathons.com/wp-json/tmd/v3';
 
@@ -20,6 +25,7 @@ export const apiBaseUrl = normalizeBaseUrl(
 );
 
 export async function fetchEvents(options: FetchEventsOptions = {}): Promise<TmdEvent[]> {
+	if (useTmdV4) return tmdV4.fetchV4Events(options);
 	const endpoint = new URL(`${apiBaseUrl}/events`);
 	endpoint.searchParams.set('per_page', String(options.limit ?? 12));
 	endpoint.searchParams.set('include_relationships', 'true');
@@ -47,6 +53,7 @@ export async function fetchEvents(options: FetchEventsOptions = {}): Promise<Tmd
 }
 
 export async function fetchEventById(id: number): Promise<TmdEvent> {
+	if (useTmdV4) return v4OrNotFound(tmdV4.fetchV4EventById(id), id);
 	const endpoint = new URL(`${apiBaseUrl}/events/${id}`);
 	endpoint.searchParams.set('include_relationships', 'true');
 	endpoint.searchParams.set(
@@ -124,6 +131,22 @@ export class TmdNotFoundError extends Error {
 	}
 }
 
+/** Keep existing route-specific 404 UX while switching backend APIs. */
+async function v4OrNotFound<T>(
+	request: Promise<T>,
+	id: string | number,
+	resource = 'Event'
+): Promise<T> {
+	try {
+		return await request;
+	} catch (error) {
+		if (error instanceof tmdV4.TmdV4ApiError && error.status === 404) {
+			throw new TmdNotFoundError(id, resource);
+		}
+		throw error;
+	}
+}
+
 /**
  * Fetch upcoming events and return lightweight summary DTOs.
  * Server-side filters: country, after, before.
@@ -133,6 +156,7 @@ export async function getEvents(
 	perPage = 20,
 	filters?: TmdEventFilters
 ): Promise<TmdEventSummary[]> {
+	if (useTmdV4) return tmdV4.getV4Events(perPage, filters);
 	const endpoint = new URL(`${apiBaseUrl}/events`);
 	endpoint.searchParams.set('per_page', String(perPage));
 	endpoint.searchParams.set('future', '1');
@@ -195,6 +219,7 @@ export async function getEvents(
  * Fetch a single event by ID and return a full detail DTO.
  */
 export async function getEvent(id: string | number): Promise<TmdEventDetail> {
+	if (useTmdV4) return v4OrNotFound(tmdV4.getV4Event(id), id);
 	const endpoint = new URL(`${apiBaseUrl}/events/${id}`);
 	endpoint.searchParams.set('include_relationships', 'true');
 
@@ -222,6 +247,7 @@ export async function getEvent(id: string | number): Promise<TmdEventDetail> {
  * Fetch a paged DJ list.
  */
 export async function getDjs(perPage = 50): Promise<TmdDj[]> {
+	if (useTmdV4) return tmdV4.getV4Djs(perPage);
 	const endpoint = new URL(`${apiBaseUrl}/djs`);
 	endpoint.searchParams.set('per_page', String(perPage));
 	endpoint.searchParams.set('orderby', 'title');
@@ -243,6 +269,7 @@ export async function getDjs(perPage = 50): Promise<TmdDj[]> {
  * Fetch a single DJ by ID.
  */
 export async function getDj(id: string | number): Promise<TmdDjDetail> {
+	if (useTmdV4) return v4OrNotFound(tmdV4.getV4Dj(id), id, 'DJ');
 	const endpoint = new URL(`${apiBaseUrl}/djs/${id}`);
 
 	const response = await fetch(endpoint.toString(), {
@@ -269,6 +296,7 @@ export async function getDj(id: string | number): Promise<TmdDjDetail> {
  * Fetch a single event series by ID, including editions if available.
  */
 export async function getEventSeries(id: string | number): Promise<TmdEventSeries> {
+	if (useTmdV4) return v4OrNotFound(tmdV4.getV4Series(id), id, 'Event series');
 	const endpoint = new URL(`${apiBaseUrl}/event-series/${id}`);
 	endpoint.searchParams.set('include_relationships', 'true');
 
@@ -323,23 +351,28 @@ export function normalizeTmdEventDetail(record: TmdApiRecord): TmdEventDetail {
 	const relationships = getRecord(record, 'relationships');
 	const summary = normalizeTmdEvent(record);
 
-	const website =
-		getString(record, ['website']) ?? getString(meta, ['website']);
+	const website = safeHttpUrl(
+		getString(record, ['website']) ?? getString(meta, ['website'])
+	);
 	const email =
 		getString(record, ['email']) ?? getString(meta, ['email']);
-	const facebookEvent =
+	const facebookEvent = safeHttpUrl(
 		getString(record, ['facebook_event', 'facebookEvent']) ??
-		getString(meta, ['facebook_event', 'facebookEvent']);
-	const facebookGroup =
+		getString(meta, ['facebook_event', 'facebookEvent'])
+	);
+	const facebookGroup = safeHttpUrl(
 		getString(record, ['facebook_group', 'facebookGroup']) ??
-		getString(meta, ['facebook_group', 'facebookGroup']);
-	const facebookPage =
+		getString(meta, ['facebook_group', 'facebookGroup'])
+	);
+	const facebookPage = safeHttpUrl(
 		getString(record, ['facebook_page', 'facebookPage']) ??
-		getString(meta, ['facebook_page', 'facebookPage']);
+		getString(meta, ['facebook_page', 'facebookPage'])
+	);
 
+	const emailHref = safeMailto(email);
 	const contactLinks: TmdContactLink[] = [
 		website ? { label: 'Website', href: website } : null,
-		email ? { label: 'Email', href: `mailto:${email}` } : null
+		emailHref ? { label: 'Email', href: emailHref } : null
 	].filter((x): x is TmdContactLink => x !== null);
 
 	const socialLinks: TmdContactLink[] = [
@@ -367,13 +400,15 @@ export function normalizeTmdEventDetail(record: TmdApiRecord): TmdEventDetail {
 
 function normalizeTmdDj(record: TmdApiRecord): TmdDj {
 	const meta = getRecord(record, 'meta');
-	const website = getString(record, ['website']) ?? getString(meta, ['website']);
-	const facebook =
+	const website = safeHttpUrl(getString(record, ['website']) ?? getString(meta, ['website']));
+	const facebook = safeHttpUrl(
 		getString(record, ['facebook', 'facebook_url']) ??
-		getString(meta, ['facebook', 'facebook_url']);
-	const instagram =
+		getString(meta, ['facebook', 'facebook_url'])
+	);
+	const instagram = safeHttpUrl(
 		getString(record, ['instagram', 'instagram_url']) ??
-		getString(meta, ['instagram', 'instagram_url']);
+		getString(meta, ['instagram', 'instagram_url'])
+	);
 
 	const socialLinks: TmdContactLink[] = [
 		facebook ? { label: 'Facebook', href: facebook } : null,
@@ -475,7 +510,7 @@ function normalizeEvent(record: TmdApiRecord): TmdEvent {
 	return {
 		id: getNumber(record, ['id']) ?? 0,
 		title: getTitle(record),
-		link: getString(record, ['link', 'url']),
+		link: safeHttpUrl(getString(record, ['link', 'url'])),
 		slug: getString(record, ['slug']),
 		startDate: getString(record, ['start_date', 'startDate']) ?? getString(meta, ['start_date', 'startDate']),
 		endDate: getString(record, ['end_date', 'endDate']) ?? getString(meta, ['end_date', 'endDate']),
@@ -487,11 +522,11 @@ function normalizeEvent(record: TmdApiRecord): TmdEvent {
 		venueName:
 			getString(record, ['venue_name', 'venueName', 'venue-name']) ??
 			getString(meta, ['venue_name', 'venueName', 'venue-name']),
-		website: getString(record, ['website']) ?? getString(meta, ['website']),
+		website: safeHttpUrl(getString(record, ['website']) ?? getString(meta, ['website'])),
 		email: getString(record, ['email']) ?? getString(meta, ['email']),
-		facebookEvent: getString(record, ['facebook_event', 'facebookEvent']) ?? getString(meta, ['facebook_event', 'facebookEvent']),
-		facebookGroup: getString(record, ['facebook_group', 'facebookGroup']) ?? getString(meta, ['facebook_group', 'facebookGroup']),
-		facebookPage: getString(record, ['facebook_page', 'facebookPage']) ?? getString(meta, ['facebook_page', 'facebookPage']),
+		facebookEvent: safeHttpUrl(getString(record, ['facebook_event', 'facebookEvent']) ?? getString(meta, ['facebook_event', 'facebookEvent'])),
+		facebookGroup: safeHttpUrl(getString(record, ['facebook_group', 'facebookGroup']) ?? getString(meta, ['facebook_group', 'facebookGroup'])),
+		facebookPage: safeHttpUrl(getString(record, ['facebook_page', 'facebookPage']) ?? getString(meta, ['facebook_page', 'facebookPage'])),
 		price: getString(record, ['price']) ?? getString(meta, ['price']),
 		currency: getString(record, ['currency']) ?? getString(meta, ['currency']),
 		features: extractFeatures(record, meta),
@@ -543,7 +578,7 @@ function extractPeople(record: TmdApiRecord, relationships: TmdApiRecord, key: s
 	return value.filter(isRecord).map((person) => ({
 		id: getNumber(person, ['id']) ?? 0,
 		name: getString(person, ['name', 'title']) ?? 'Unnamed',
-		url: getString(person, ['url', 'link'])
+		url: safeHttpUrl(getString(person, ['url', 'link']))
 	}));
 }
 
