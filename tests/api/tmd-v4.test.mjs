@@ -61,6 +61,33 @@ test('V4 event relationships use embedded entries or link URIs', async t => {
   assert.deepEqual(detail.teachers.map(x => x.id), [5]);
   assert.deepEqual(detail.series.map(x => x.id), [7]);
 });
+test('V4 detail sanitizes HTTP credentials and email header injection', async t => {
+  const old = globalThis.fetch;
+  t.after(() => globalThis.fetch = old);
+  globalThis.fetch = async () => respond({
+    ...event(),
+    meta: {
+      ...event().meta,
+      website: 'https://user:secret@example.com/',
+      email: 'guest@example.com?bcc=attacker@example.org',
+      facebook_event: 'javascript:alert(1)',
+      facebook_group: 'https://example.com/group'
+    },
+    _links: {
+      djs: [{ href: 'javascript:alert(1)/42', title: 'Malicious DJ link' }],
+      teachers: [{ href: 'https://example.com/user:secret@evil.test/7', title: 'Teacher' }]
+    }
+  });
+  const detail = await getV4Event(10);
+  assert.equal(detail.website, undefined);
+  assert.deepEqual(detail.contactLinks, []);
+  assert.deepEqual(detail.socialLinks, [
+    { label: 'Facebook group', href: 'https://example.com/group' }
+  ]);
+  assert.deepEqual(detail.djs, []);
+  assert.deepEqual(detail.teachers, [{ id: 7, name: 'Teacher', url: 'https://example.com/user:secret@evil.test/7' }]);
+});
+
 test('V4 DJ metadata uses actual tmd_dj prefixed keys', async t => {
   const old = globalThis.fetch;
   t.after(() => globalThis.fetch = old);
