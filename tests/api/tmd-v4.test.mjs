@@ -184,3 +184,21 @@ test('V4 series pages include dated editions from embedded relations', async t =
   assert.equal(series.editions[1].dateStart, '2026-08-01');
   assert.equal(series.editions[1].city, 'Vienna');
 });
+
+
+test('upcoming registration filter applies server-side to each page, never after pagination', async t => {
+  const oldFetch = globalThis.fetch;
+  t.after(() => globalThis.fetch = oldFetch);
+  let requested;
+  globalThis.fetch = async url => {
+    requested = new URL(url);
+    return respond([event()], 200, {
+      'X-WP-Total': '21', 'X-WP-TotalPages': '2'
+    });
+  };
+  const page = await getV4EventPage(20, { registrationState: 'upcoming' }, 1);
+  assert.equal(page.items.length, 1);
+  assert.equal(page.totalPages, 2);
+  assert.match(requested.searchParams.get('registration_start_date_after'), /^\d{4}-\d{2}-\d{2}$/);
+  assert.equal(requested.searchParams.get('future'), null);
+});
