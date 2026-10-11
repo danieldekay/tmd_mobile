@@ -4,127 +4,102 @@
 /// <reference lib="webworker" />
 
 import { build, files, version } from '$service-worker';
+import { isPublicApiCacheCandidate, mayCachePublicResponse } from '$lib/offline/public-api-policy';
 
 declare const self: ServiceWorkerGlobalScope;
 
-const CACHE_NAME = `tmd-cache-${version}`;
-const API_CACHE_NAME = 'tmd-api-cache';
-const API_TTL_MS = 60 * 60 * 1000; // 1 hour
+const SHELL_CACHE = `tmd-shell-${version}`;
+const PUBLIC_API_CACHE = `tmd-api-public-v2-${version}`;
+const API_TTL_MS = 60 * 60 * 1000;
+const ASSETS = [...new Set([...build, ...files, '/index.html'])];
 
-// All precacheable assets (app shell + static files)
-const ASSETS = [...build, ...files];
-
-async function precacheAssets(): Promise<void> {
-	const cache = await caches.open(CACHE_NAME);
-	await cache.addAll(ASSETS);
-	await self.skipWaiting();
-}
-
-// ── Install: precache all static assets ───────────────────────────────────
 self.addEventListener('install', (event) => {
-	event.waitUntil(precacheAssets());
+	event.waitUntil((async () => {
+		const cache = await caches.open(SHELL_CACHE);
+		await cache.addAll(ASSETS);
+		await self.skipWaiting();
+	})());
 });
 
-async function clearOldCaches(): Promise<void> {
-	const keys = await caches.keys();
-	for (const key of keys) {
-		if (key !== CACHE_NAME && key !== API_CACHE_NAME) {
-			await caches.delete(key);
-		}
-	}
-	await self.clients.claim();
-}
-
-// ── Activate: remove old caches ────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
-	event.waitUntil(clearOldCaches());
+	event.waitUntil((async () => {
+		const names = await caches.keys();
+		await Promise.all(names
+			.filter((name) =>
+				(name.startsWith('tmd-') || name.startsWith('rnt-')) &&
+				name !== SHELL_CACHE && name !== PUBLIC_API_CACHE
+			)
+			.map((name) => caches.delete(name))
+		);
+		await self.clients.claim();
+	})());
 });
 
-async function handleStaticAssetRequest(request: Request): Promise<Response> {
+async function serveStatic(request: Request): Promise<Response> {
 	const cached = await caches.match(request);
 	return cached ?? fetch(request);
 }
 
-async function handleSpaNavigationRequest(request: Request): Promise<Response> {
-	const cached = await caches.match('/index.html');
-	return cached ?? fetch(request);
-}
-
-async function handleDefaultRequest(request: Request): Promise<Response> {
+async function serveNavigation(request: Request): Promise<Response> {
+	// Network-first avoids trapping installed PWAs on an obsolete index.html.
 	try {
-		return await fetch(request);
+		const response = await fetch(request, { cache: 'no-store' });
+		if (response.ok) return response;
+		return response;
 	} catch {
-		const cached = await caches.match(request);
-		return cached ?? Response.error();
+		return (await caches.match('/index.html')) ?? Response.error();
 	}
 }
 
-// ── Fetch: route-based caching strategy ───────────────────────────────────
-self.addEventListener('fetch', (event) => {
-	const { request } = event;
-	const url = new URL(request.url);
-
-	// Only handle GET requests
-	if (request.method !== 'GET') return;
-
-	// TMD API requests: network-first with 1-hour TTL cache fallback
-	if (url.href.includes('/wp-json/tmd/')) {
-		event.respondWith(handleApiRequest(request));
-		return;
-	}
-
-	// Static assets / app shell: cache-first
-	if (ASSETS.includes(url.pathname)) {
-		event.respondWith(handleStaticAssetRequest(request));
-		return;
-	}
-
-	// SPA navigation: return cached index.html (adapter-static fallback)
-	if (request.headers.get('accept')?.includes('text/html')) {
-		event.respondWith(handleSpaNavigationRequest(request));
-		return;
-	}
-
-	// Default: network with cache fallback
-	event.respondWith(handleDefaultRequest(request));
-});
-
-async function handleApiRequest(request: Request): Promise<Response> {
-	const cache = await caches.open(API_CACHE_NAME);
-	const cached = await cache.match(request);
-
-	if (cached) {
-		const dateHeader = cached.headers.get('sw-cached-at');
-		const cachedAt = dateHeader ? parseInt(dateHeader, 10) : 0;
-		const isStale = Date.now() - cachedAt > API_TTL_MS;
-
-		if (!isStale) {
-			return cached;
-		}
+async function servePublicApi(request: Request): Promise<Response> {
+	const cache = await caches.open(PUBLIC_API_CACHE);
+	const previous = await cache.match(request);
+	if (previous) {
+		const last = Number(previous.headers.get('sw-cached-at') ?? 0);
+		if (last > 0 && Date.now() - last < API_TTL_MS) return previous;
 	}
 
 	try {
 		const response = await fetch(request);
-		if (response.ok) {
-			// Clone response, add cache timestamp header
+		if (mayCachePublicResponse(response)) {
 			const headers = new Headers(response.headers);
 			headers.set('sw-cached-at', String(Date.now()));
-			const cachedResponse = new Response(await response.clone().arrayBuffer(), {
-				status: response.status,
-				statusText: response.statusText,
-				headers
+			const cached = new Response(await response.clone().arrayBuffer(), {
+				status: response.status, statusText: response.statusText, headers
 			});
-			await cache.put(request, cachedResponse);
+			await cache.put(request, cached);
 		}
 		return response;
 	} catch {
-		// Network failed — return stale cache if available
-		if (cached) return cached;
-		return Response.error();
+		return previous ?? Response.error();
 	}
 }
 
-// ── Skip waiting on demand ─────────────────────────────────────────────────
+self.addEventListener('fetch', (event) => {
+	const request = event.request;
+	if (request.method !== 'GET') return;
+	const url = new URL(request.url);
+
+	if (isPublicApiCacheCandidate(request, self.location.origin)) {
+		event.respondWith(servePublicApi(request));
+		return;
+	}
+
+	if (url.origin === self.location.origin && ASSETS.includes(url.pathname)) {
+		event.respondWith(serveStatic(request));
+		return;
+	}
+
+	if (url.origin === self.location.origin &&
+		(request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html'))) {
+		event.respondWith(serveNavigation(request));
+		return;
+	}
+
+	// Private, authenticated, unknown and non-allowlisted requests are network-only.
+	// Do not fall back to broad caches from previous service-worker versions.
+});
+
 self.addEventListener('message', (event) => {
 	if (event.data?.type === 'SKIP_WAITING') {
 		void self.skipWaiting();
