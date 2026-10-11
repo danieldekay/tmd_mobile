@@ -205,6 +205,13 @@ export async function getV4EventPage(
   url.searchParams.set('per_page', String(intParam(perPage, 1, 100)));
   url.searchParams.set('orderby', 'start_date');
   url.searchParams.set('order', 'asc');
+  url.searchParams.set('meta_fields', [
+    'start_date', 'end_date', 'registration_start_date',
+    'city', 'country', 'venue-name', 'lat', 'lon',
+    'role_balanced', 'invitation_only', 'have_registration',
+    'have_milongas', 'have_tickets', 'have_live_music',
+    'have_lessons', 'have_show'
+  ].join(','));
   url.searchParams.set('start_date_after', filters?.dateAfter || localToday());
   if (filters?.dateBefore) url.searchParams.set('start_date_before', filters.dateBefore);
   if (filters?.country) url.searchParams.set('country', filters.country);
@@ -219,8 +226,51 @@ export async function getV4EventPage(
   }
   return { ...result, items };
 }
+/**
+ * Bounded multi-page fetch. A requested count larger than 100 must not silently
+ * truncate at the REST page-size limit. Consumers needing exhaustiveness can
+ * inspect complete/truncated on getV4EventRange.
+ */
+export async function getV4EventRange(
+  limit = 20, filters?: TmdEventFilters
+): Promise<TmdV4Page<TmdEventSummary> & { truncated: boolean }> {
+  const requested = intParam(limit, 1, 1000);
+  const pageSize = Math.min(requested, 100);
+  const maxPages = 10;
+  const seen = new Set<number>();
+  const items: TmdEventSummary[] = [];
+  let total: number | undefined;
+  let totalPages: number | undefined;
+  let fetchedPages = 0;
+  let finished = false;
+
+  for (let page = 1; page <= maxPages && items.length < requested; page++) {
+    const result = await getV4EventPage(pageSize, filters, page);
+    fetchedPages++;
+    total = result.total;
+    totalPages = result.totalPages;
+    for (const event of result.items) {
+      if (!seen.has(event.id)) {
+        seen.add(event.id);
+        items.push(event);
+      }
+      if (items.length >= requested) break;
+    }
+    if (result.complete === true || result.items.length === 0 ||
+        (totalPages === undefined && result.items.length < pageSize)) {
+      finished = true;
+      break;
+    }
+  }
+
+  const complete = finished || (total !== undefined && items.length >= total);
+  return {
+    items, page: fetchedPages, perPage: pageSize, total, totalPages,
+    complete, truncated: !complete
+  };
+}
 export async function getV4Events(perPage = 20, filters?: TmdEventFilters): Promise<TmdEventSummary[]> {
-  return (await getV4EventPage(perPage, filters)).items;
+  return (await getV4EventRange(perPage, filters)).items;
 }
 export async function getV4Event(idValue: string | number): Promise<TmdEventDetail> {
   const url = new URL(tmdV4BaseUrl + '/events/' + encodeURIComponent(String(idValue)));
@@ -283,9 +333,41 @@ export async function getV4Teacher(idValue: string | number): Promise<TmdTeacher
 
 export async function getV4Series(idValue: string | number): Promise<TmdEventSeries> {
   const url = new URL(tmdV4BaseUrl + '/series/' + encodeURIComponent(String(idValue)));
+  url.searchParams.set('_embed', 'true');
+  url.searchParams.set('per_page', '100');
   const item = record((await readJson(url)).data, 'series detail');
-  const editions: TmdSeriesEdition[] = linked(item, 'events')
-    .map(event => ({ id: event.id, title: event.name }));
+  const seen = new Set<number>();
+  const editions: TmdSeriesEdition[] = [];
+  const append = (payload: JsonObject) => {
+    const embedded = object(payload._embedded);
+    const events = Array.isArray(embedded.events) ? embedded.events : [];
+    for (const raw of events) {
+      const event = object(raw), eventId = id(event.id);
+      if (eventId === undefined || seen.has(eventId)) continue;
+      seen.add(eventId);
+      editions.push({
+        id: eventId, title: string(event.title) ?? 'Untitled edition',
+        dateStart: from(event, ['start_date']), dateEnd: from(event, ['end_date']),
+        city: from(event, ['city']), country: from(event, ['country'])
+      });
+    }
+  };
+  append(item);
+  // Series with many historical editions have their own embedded pagination.
+  // Cap at ten pages to avoid unbounded API requests from a detail screen.
+  let pagination = object(object(item._embedded).events_pagination);
+  for (let page = 2; pagination.has_next === true && page <= 10; page++) {
+    url.searchParams.set('page', String(page));
+    const next = record((await readJson(url)).data, 'series editions');
+    append(next);
+    pagination = object(object(next._embedded).events_pagination);
+  }
+  if (editions.length === 0) {
+    for (const related of linked(item, 'events')) {
+      if (!seen.has(related.id)) editions.push({ id: related.id, title: related.name });
+    }
+  }
+  editions.sort((a, b) => (a.dateStart ?? '').localeCompare(b.dateStart ?? '') || a.id - b.id);
   return {
     id: ensureId(item), title: string(item.title) ?? 'Untitled series',
     slug: string(item.slug), description: from(item, ['about', 'abstract']),
