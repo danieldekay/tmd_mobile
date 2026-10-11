@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { resolve } from "$app/paths";
-  import { getEvents } from "$lib/api/tmd";
+  import { getEvents, useTmdV4 } from "$lib/api/tmd";
+  import { getV4EventRange } from "$lib/api/tmd-v4";
   import type { TmdEventLocation, TmdEventSummary } from "$lib/types";
 
   // ── State ──────────────────────────────────────────────────────────────────
@@ -11,6 +12,7 @@
   let mapEl = $state<HTMLDivElement | null>(null);
   let mappedCount = $state(0);
   let omittedCount = $state(0);
+  let resultTruncated = $state(false);
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function toLocation(event: TmdEventSummary): TmdEventLocation | null {
@@ -32,7 +34,14 @@
     let map: import("leaflet").Map | undefined;
 
     const loadLocations = async () => {
-      const events = await getEvents(100);
+      const events = useTmdV4
+        ? await (async () => {
+            const result = await getV4EventRange(400);
+            resultTruncated = result.truncated;
+            return result.items;
+          })()
+        : await getEvents(100);
+      if (!useTmdV4) resultTruncated = events.length === 100;
       const locations: TmdEventLocation[] = [];
       let omitted = 0;
       for (const event of events) {
@@ -209,6 +218,12 @@
       aria-label="Event map"
     ></div>
   </div>
+
+  {#if !isLoading && resultTruncated}
+    <p class="panel p-3 text-sm text-muted" role="status">
+      More events exist than this map has loaded. <a class="text-primary underline" href={resolve("/events")}>Browse all events</a> to continue through the directory.
+    </p>
+  {/if}
 
   {#if tileError}
     <!-- Tile unavailable fallback -->
