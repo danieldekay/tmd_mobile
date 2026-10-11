@@ -59,12 +59,12 @@
 					<article>
 						<p class="text-xs text-muted">{formatDate(post.date)}</p>
 						<h2 class="font-display mt-1 text-2xl font-bold text-ink">
-							<a class="text-primary hover:underline" href={resolve(`/blog/${post.slug}`)}>{post.title.rendered.replace(/<[^>]*>/g, '')}</a>
+							<a class="text-primary hover:underline" href={resolve('/blog/[slug]', { slug: post.slug })}>{post.title.rendered.replace(/<[^>]*>/g, '')}</a>
 						</h2>
 						{#if post.excerpt?.rendered}
 							<div class="mt-2 text-sm text-muted">{@html sanitizeWpHtml(post.excerpt.rendered)}</div>
 						{/if}
-						<a class="mt-3 inline-flex text-sm font-semibold text-primary" href={resolve(`/blog/${post.slug}`)}>Read article →</a>
+						<a class="mt-3 inline-flex text-sm font-semibold text-primary" href={resolve('/blog/[slug]', { slug: post.slug })}>Read article →</a>
 					</article>
 				</li>
 			{/each}
