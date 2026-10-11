@@ -4,7 +4,7 @@
 	import { page } from '$app/state';
 	import { getEventSeries, TmdNotFoundError } from '$lib/api/tmd';
 	import type { TmdEventSeries } from '$lib/types';
-	import { formatCalendarDate, isFutureCalendarDay, calendarDay } from '$lib/dates/calendar-date';
+	import { formatCalendarDate, isFutureCalendarDay, calendarDay, todayCalendarDay } from '$lib/dates/calendar-date';
 
 	let series = $state<TmdEventSeries | null>(null);
 	let isLoading = $state(true);
@@ -16,14 +16,14 @@
 	const upcomingEditions = $derived.by(() => {
 		if (!series) return [];
 		return series.editions.filter((e) => !e.dateStart || isFutureCalendarDay(e.dateStart) ||
-			calendarDay(e.dateStart) === calendarDay(new Date().toLocaleDateString('en-CA')));
+			calendarDay(e.dateStart) === todayCalendarDay());
 	});
 
 	const pastEditions = $derived.by(() => {
 		if (!series) return [];
 		return series.editions
 			.filter((e) => e.dateStart && !isFutureCalendarDay(e.dateStart) &&
-				calendarDay(e.dateStart) !== calendarDay(new Date().toLocaleDateString('en-CA')))
+				calendarDay(e.dateStart) !== todayCalendarDay())
 			.slice()
 			.reverse();
 	});
