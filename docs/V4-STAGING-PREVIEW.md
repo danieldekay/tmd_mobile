@@ -9,3 +9,9 @@ Workflow: `.github/workflows/deploy-v4-preview.yml`. A normal branch push only p
 Successful deployment should provide a Cloudflare workers.dev preview URL. That URL is not known in advance and must be obtained from the actual deployment output. CORS must then also be verified from that preview origin in a browser. No V4 production rollout is implied.
 
 Do not merge/enable production V4 or modify the production Worker until Core staging privacy/CORS checks and browser-level PWA validation pass.
+
+## Staging Core verification and preview trigger
+
+Core V4 staging deployment [#38292089269](https://github.com/danieldekay/tmd_core/actions/runs/38292089269) passed its security, build, upload, exact-SHA and anonymous public/private endpoint checks at commit `ca807cd29eaf4d14c01aad3753b0f14da0bba8cc`.
+
+The separate mobile preview deploy is now eligible to run after its additional WordPress Core/CORS contract tests. It is still not a production V4 rollout.
