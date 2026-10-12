@@ -1,0 +1,13 @@
+# Isolated Cloudflare Worker preview; deliberately no custom domain or production routes.
+name = "tmd-mobile-staging"
+main = "./worker.ts"
+compatibility_date = "2024-01-01"
+workers_dev = true
+
+[assets]
+directory = "./build"
+not_found_handling = "single-page-application"
+
+[vars]
+PUBLIC_TMD_API_BASE_URL = "https://staging.tangomarathons.com/wp-json/tmd/v3"
+PUBLIC_TMD_V4_API_BASE_URL = "https://staging.tangomarathons.com/wp-json/tmd/v4"

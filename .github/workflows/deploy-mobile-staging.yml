@@ -1,0 +1,53 @@
+name: Deploy isolated TMD Mobile V4 preview
+
+on:
+  push:
+    branches: [staging/v4-mobile-preview]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tmd-mobile-staging-preview
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    if: github.ref == 'refs/heads/staging/v4-mobile-preview'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: staging-mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Validate Svelte routes and TypeScript
+        run: npm run check
+      - name: Verify V4 API and PWA cache contract
+        run: npm test
+      - name: Build mobile preview against staging WordPress V4
+        env:
+          PUBLIC_TMD_USE_V4: 'true'
+          PUBLIC_TMD_API_BASE_URL: 'https://staging.tangomarathons.com/wp-json/tmd/v3'
+          PUBLIC_TMD_V4_API_BASE_URL: 'https://staging.tangomarathons.com/wp-json/tmd/v4'
+        run: npm run build
+      - name: Verify isolated Worker preview configuration
+        run: |
+          set -euo pipefail
+          grep -Fx 'name = "tmd-mobile-staging"' wrangler.staging.toml
+          grep -Fx 'workers_dev = true' wrangler.staging.toml
+          ! grep -E '^routes?\s*=' wrangler.staging.toml
+          ! grep -q 'mobile.tangomarathons.com' wrangler.staging.toml
+      - name: Deploy staging-only Worker without production routes
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          npx --yes wrangler@4 deploy --config wrangler.staging.toml \
+            --message "V4 staging preview ${GITHUB_SHA}"
