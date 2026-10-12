@@ -1,0 +1,34 @@
+name: Verify deployed WordPress V4 staging contract
+
+on:
+  push:
+    branches: [staging/v4-mobile-preview]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cross-origin-api:
+    name: Verify V4 read contract and private endpoint boundaries
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+      - name: Verify Core V4 staging integration is the expected commit
+        run: |
+          set -euo pipefail
+          expected='c22554d98355bdcb6161b58b8d174fca7a13cdcf'
+          actual=$(curl --fail --silent --show-error --max-time 30 https://staging.tangomarathons.com/wp-content/plugins/tmd_core/DEPLOYED_COMMIT.txt | tr -d '\r\n')
+          test "$actual" = "$expected" || {
+            echo "::error::Core V4 staging revision is not deployed; refusing to validate an unrelated API"
+            exit 1
+          }
+      - name: Smoke public V4 and WordPress Core REST schema, pagination, CORS and privacy
+        run: |
+          node scripts/smoke-public-api.mjs \
+            --origin=https://staging.tangomarathons.com \
+            --client-origin=https://mobile.tangomarathons.com
