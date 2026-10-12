@@ -26,6 +26,14 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: npm
+      - name: Require Cloudflare token for isolated staging Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::Missing CLOUDFLARE_API_TOKEN for TMD Mobile preview. Set in staging environment or repository secrets; never paste it into issue comments."
+            exit 1
+          fi
       - name: Install locked dependencies
         run: npm ci
       - name: Validate API contract and TypeScript
