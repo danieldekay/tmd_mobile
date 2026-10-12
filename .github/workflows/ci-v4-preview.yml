@@ -1,0 +1,37 @@
+name: Validate TMD Mobile V4 staging build
+
+on:
+  push:
+    branches: [staging/mobile-v4-preview]
+
+permissions:
+  contents: read
+
+jobs:
+  v4-preview-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Check Typescript, regression suite and public API smoke syntax
+        run: |
+          npm run check
+          npm test
+          node --check scripts/smoke-public-api.mjs
+      - name: Compile isolated V4 frontend against staging Core
+        env:
+          PUBLIC_TMD_USE_V4: 'true'
+          PUBLIC_TMD_API_BASE_URL: 'https://staging.tangomarathons.com/wp-json/tmd/v3'
+          PUBLIC_TMD_V4_API_BASE_URL: 'https://staging.tangomarathons.com/wp-json/tmd/v4'
+        run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tmd-mobile-v4-staging-static
+          path: build
+          retention-days: 7
