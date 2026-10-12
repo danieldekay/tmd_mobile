@@ -1,0 +1,15 @@
+"$schema" = "./node_modules/wrangler/config-schema.json"
+
+# Preview-only Worker: no production DNS, custom domain or route.
+name = "tmd-mobile-v4-staging"
+main = "./worker.ts"
+compatibility_date = "2024-01-01"
+workers_dev = true
+
+[assets]
+directory = "./build"
+not_found_handling = "single-page-application"
+
+[vars]
+PUBLIC_TMD_API_BASE_URL = "https://staging.tangomarathons.com/wp-json/tmd/v3"
+PUBLIC_TMD_V4_API_BASE_URL = "https://staging.tangomarathons.com/wp-json/tmd/v4"

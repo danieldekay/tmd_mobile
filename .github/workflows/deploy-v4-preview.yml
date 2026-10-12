@@ -1,0 +1,60 @@
+name: Preview TMD Mobile V4 on separate staging Worker
+
+on:
+  push:
+    branches: [staging/mobile-v4-preview]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tmd-mobile-v4-preview
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    # Initial setup commit is preparation only. A gated trigger commit
+    # [deploy-mobile-v4-staging] deploys after Core staging has passed.
+    if: github.ref == 'refs/heads/staging/mobile-v4-preview' && (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[deploy-mobile-v4-staging]'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: staging
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Validate API contract and TypeScript
+        run: |
+          npm run check
+          npm test
+      - name: Check the staging Worker cannot route production traffic
+        run: |
+          test "$(grep '^name' wrangler.staging.toml)" = 'name = "tmd-mobile-v4-staging"'
+          grep -q '^workers_dev = true$' wrangler.staging.toml
+          if grep -Eq '^(routes?|zone_id|custom_domain)[[:space:]]*=' wrangler.staging.toml; then
+            echo '::error::Staging configuration must not include production routes.'
+            exit 1
+          fi
+      - name: Verify staging Core V4 publicly readable and CORS-accessible
+        run: |
+          node scripts/smoke-public-api.mjs \
+            --origin=https://staging.tangomarathons.com \
+            --client-origin=https://mobile.tangomarathons.com
+      - name: Build V4 frontend with staging API only
+        env:
+          PUBLIC_TMD_USE_V4: 'true'
+          PUBLIC_TMD_API_BASE_URL: 'https://staging.tangomarathons.com/wp-json/tmd/v3'
+          PUBLIC_TMD_V4_API_BASE_URL: 'https://staging.tangomarathons.com/wp-json/tmd/v4'
+        run: npm run build
+      - name: Deploy preview Worker (never production Worker)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          npx wrangler deploy --config wrangler.staging.toml \
+            --message "V4 staging preview ${GITHUB_SHA}"
