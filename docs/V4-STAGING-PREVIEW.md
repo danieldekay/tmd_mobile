@@ -25,3 +25,24 @@ The separate mobile preview deploy is now eligible to run after its additional W
 - The workflow now checks for this token before any expensive build. Once it is configured, trigger a new `staging/mobile-v4-preview` commit whose message includes `[deploy-mobile-v4-staging]`.
 - Staging content is sparse: 5 events, 1 series, and 0 DJs / 0 teachers. Populate disposable published DJ and teacher fixtures before signing off UI data mapping.
 - After the Worker deployment, inspect its actual `workers.dev` URL and test the installed PWA, offline caching, network fallback, browser-origin CORS, and navigation. Production V4 remains disabled.
+
+## Deployed preview app smoke gate
+
+After the Cloudflare staging Worker exists, run `.github/workflows/smoke-v4-preview-app.yml` manually with the deployed `workers.dev` origin. The workflow calls `npm run smoke:preview` and checks, without credentials:
+
+- the root app shell and SPA routes `/events`, `/calendar`, `/map` and `/blog` return HTML;
+- `manifest.json` is parseable and installable (`display=standalone`, `start_url=/`);
+- `service-worker.js` is reachable, not long-cacheable, and contains the TMD public API cache markers;
+- static security headers include `nosniff`, frame denial and CSP `connect-src` for staging;
+- the deployed preview origin can read `https://staging.tangomarathons.com/wp-json/tmd/v4/events` with acceptable CORS;
+- the script refuses to run against `mobile.tangomarathons.com` unless explicitly overridden, so it is not accidentally used as a production validation.
+
+Example local/manual command:
+
+```bash
+npm run smoke:preview -- \
+  --url=https://tmd-mobile-v4-staging.<account>.workers.dev \
+  --api-origin=https://staging.tangomarathons.com
+```
+
+This is still not enough for production cutover. A real browser pass is still required for install/update behavior, offline fallback and visible UI mapping with non-empty DJ and teacher fixtures.
