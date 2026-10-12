@@ -43,6 +43,15 @@ jobs:
           grep -Fx 'workers_dev = true' wrangler.staging.toml
           ! grep -E '^routes?\s*=' wrangler.staging.toml
           ! grep -q 'mobile.tangomarathons.com' wrangler.staging.toml
+      - name: Retain tested V4 preview build
+        uses: actions/upload-artifact@v4
+        with:
+          name: tmd-mobile-v4-staging-preview
+          path: |
+            build/
+            worker.ts
+            wrangler.staging.toml
+          retention-days: 14
       - name: Deploy staging-only Worker without production routes
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
