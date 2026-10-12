@@ -135,7 +135,7 @@ async function checkApiReachability() {
     });
     assert(response.status === 200, `HTTP ${response.status}`);
     const cors = response.headers.get('access-control-allow-origin');
-    assert(cors === '*' || cors === appOrigin || cors === 'https://mobile.tangomarathons.com', `unexpected CORS: ${cors ?? 'absent'}`);
+    assert(cors === '*' || cors === appOrigin, `unexpected CORS for preview origin ${appOrigin}: ${cors ?? 'absent'}`);
     const data = await response.json();
     assert(Array.isArray(data), 'V4 events must be a JSON array');
     report('Staging Core V4 from preview origin', true, `${data.length} events on first page`);

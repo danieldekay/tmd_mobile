@@ -6,7 +6,7 @@ The separate `tmd-mobile-v4-staging` Worker serves a static V4-enabled SvelteKit
 
 Workflow: `.github/workflows/deploy-v4-preview.yml`. A normal branch push only prepares the preview; deployment requires a commit message containing `[deploy-mobile-v4-staging]` (or an authorized manual action). The job first checks type safety, tests, Core staging V4 public REST responses and cross-origin CORS. It rejects any staging Wrangler config containing production routes.
 
-Successful deployment should provide a Cloudflare workers.dev preview URL. That URL is not known in advance and must be obtained from the actual deployment output. CORS must then also be verified from that preview origin in a browser. No V4 production rollout is implied.
+Successful deployment should provide a Cloudflare workers.dev preview URL. That URL is captured from the actual Wrangler deployment output. The same deploy workflow then runs the deployed-app smoke test from that real preview origin. No V4 production rollout is implied.
 
 Do not merge/enable production V4 or modify the production Worker until Core staging privacy/CORS checks and browser-level PWA validation pass.
 
@@ -28,13 +28,15 @@ The separate mobile preview deploy is now eligible to run after its additional W
 
 ## Deployed preview app smoke gate
 
-After the Cloudflare staging Worker exists, run `.github/workflows/smoke-v4-preview-app.yml` manually with the deployed `workers.dev` origin. The workflow calls `npm run smoke:preview` and checks, without credentials:
+After the Cloudflare staging Worker exists, the deploy workflow automatically runs `npm run smoke:preview` against the actual `workers.dev` origin detected from Wrangler output. A separate manual workflow, `.github/workflows/smoke-v4-preview-app.yml`, remains available for reruns.
+
+The deployed-app smoke gate checks, without credentials:
 
 - the root app shell and SPA routes `/events`, `/calendar`, `/map` and `/blog` return HTML;
 - `manifest.json` is parseable and installable (`display=standalone`, `start_url=/`);
 - `service-worker.js` is reachable, not long-cacheable, and contains the TMD public API cache markers;
 - static security headers include `nosniff`, frame denial and CSP `connect-src` for staging;
-- the deployed preview origin can read `https://staging.tangomarathons.com/wp-json/tmd/v4/events` with acceptable CORS;
+- the deployed preview origin can read `https://staging.tangomarathons.com/wp-json/tmd/v4/events` with usable browser CORS for the preview origin itself;
 - the script refuses to run against `mobile.tangomarathons.com` unless explicitly overridden, so it is not accidentally used as a production validation.
 
 Example local/manual command:

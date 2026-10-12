@@ -18,7 +18,7 @@ jobs:
     # [deploy-mobile-v4-staging] deploys after Core staging has passed.
     if: github.ref == 'refs/heads/staging/mobile-v4-preview' && (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[deploy-mobile-v4-staging]'))
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     environment: staging
     steps:
       - uses: actions/checkout@v7
@@ -40,6 +40,7 @@ jobs:
         run: |
           npm run check
           npm test
+          node --check scripts/smoke-preview-app.mjs
       - name: Check the staging Worker cannot route production traffic
         run: |
           test "$(grep '^name' wrangler.staging.toml)" = 'name = "tmd-mobile-v4-staging"'
@@ -48,7 +49,7 @@ jobs:
             echo '::error::Staging configuration must not include production routes.'
             exit 1
           fi
-      - name: Verify staging Core V4 publicly readable and CORS-accessible
+      - name: Verify staging Core V4 publicly readable and CORS-accessible from production client origin
         run: |
           node scripts/smoke-public-api.mjs \
             --origin=https://staging.tangomarathons.com \
@@ -59,10 +60,28 @@ jobs:
           PUBLIC_TMD_API_BASE_URL: 'https://staging.tangomarathons.com/wp-json/tmd/v3'
           PUBLIC_TMD_V4_API_BASE_URL: 'https://staging.tangomarathons.com/wp-json/tmd/v4'
         run: npm run build
-      - name: Deploy preview Worker (never production Worker)
+      - name: Deploy preview Worker and capture isolated URL
+        id: deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           set -euo pipefail
           npx wrangler deploy --config wrangler.staging.toml \
-            --message "V4 staging preview ${GITHUB_SHA}"
+            --message "V4 staging preview ${GITHUB_SHA}" 2>&1 | tee wrangler-deploy.log
+
+          preview_url="$(grep -Eo 'https://[^[:space:]]+\.workers\.dev' wrangler-deploy.log | tail -n 1 || true)"
+          if [ -z "$preview_url" ]; then
+            echo '::error::Could not detect a workers.dev preview URL from Wrangler output. Run smoke-v4-preview-app.yml manually with the deployed URL if deployment succeeded.'
+            exit 1
+          fi
+          if echo "$preview_url" | grep -q 'mobile\.tangomarathons\.com'; then
+            echo '::error::Refusing to treat the production mobile domain as a staging preview.'
+            exit 1
+          fi
+          echo "preview_url=$preview_url" >> "$GITHUB_OUTPUT"
+          echo "Detected preview URL: $preview_url"
+      - name: Smoke deployed preview Worker from its real browser origin
+        run: |
+          npm run smoke:preview -- \
+            --url='${{ steps.deploy.outputs.preview_url }}' \
+            --api-origin=https://staging.tangomarathons.com
