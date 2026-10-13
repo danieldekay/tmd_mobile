@@ -4,7 +4,7 @@ import { authState, refreshAuthToken, logout } from '$lib/auth';
 
 const SERVER_SYNC_ENABLED = import.meta.env.VITE_ENABLE_SERVER_SYNC === 'true';
 
-async function authedFetch(path: string, init: RequestInit = {}): Promise<Response | null> {
+export async function authedFetch(path: string, init: RequestInit = {}, version: 'v3' | 'v4' = 'v3'): Promise<Response | null> {
 	if (!SERVER_SYNC_ENABLED) return null;
 
 	let token = get(authState).authToken;
@@ -18,7 +18,8 @@ async function authedFetch(path: string, init: RequestInit = {}): Promise<Respon
 		...existingHeaders,
 	});
 
-	const resp = await fetch(`${apiBaseUrl}${path}`, { ...init, headers: makeHeaders(token) });
+	const base = version === 'v4' ? apiBaseUrl.replace(/\/v3\/?$/, '/v4') : apiBaseUrl;
+	const resp = await fetch(`${base}${path}`, { ...init, headers: makeHeaders(token) });
 
 	if (resp.status === 401) {
 		const refreshed = await refreshAuthToken();
@@ -27,7 +28,7 @@ async function authedFetch(path: string, init: RequestInit = {}): Promise<Respon
 			return null;
 		}
 		token = get(authState).authToken ?? token;
-		return fetch(`${apiBaseUrl}${path}`, { ...init, headers: makeHeaders(token) });
+		return fetch(`${base}${path}`, { ...init, headers: makeHeaders(token) });
 	}
 
 	return resp;
