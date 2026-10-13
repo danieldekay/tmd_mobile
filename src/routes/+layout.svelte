@@ -11,7 +11,7 @@
 	let { children } = $props();
 
 	const currentYear = new Date().getFullYear();
-	type NavHref = '/' | '/events' | '/calendar' | '/map' | '/djs' | '/saved';
+	type NavHref = '/' | '/events' | '/calendar' | '/map' | '/djs' | '/saved' | '/my-tango';
 
 	const navItems: Array<{ href: NavHref; label: string }> = [
 		{ href: '/', label: 'Now' },
@@ -19,7 +19,8 @@
 		{ href: '/calendar', label: 'Calendar' },
 		{ href: '/map', label: 'Map' },
 		{ href: '/djs', label: 'DJs' },
-		{ href: '/saved', label: 'Saved' }
+		{ href: '/saved', label: 'Saved' },
+		{ href: '/my-tango', label: 'My Tango' }
 	];
 
 	onMount(async () => {
