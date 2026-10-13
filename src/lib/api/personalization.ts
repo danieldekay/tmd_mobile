@@ -147,3 +147,40 @@ export async function removeUserInteraction(interactionId: number): Promise<void
   const response = await authedFetch(`/user-interactions/${interactionId}`, { method: 'DELETE' }, 'v4');
   if (!response?.ok) throw new Error('Could not remove your follow. Try again.');
 }
+
+export async function getFollowInteraction(
+  postType: FollowMatch['target_post_type'],
+  postId: number
+): Promise<UserInteraction | null> {
+  const query = new URLSearchParams({
+    interaction_type: 'follow',
+    target_post_type: postType,
+    target_post_id: String(postId),
+    per_page: '1'
+  });
+  const response = await authedFetch(`/user-interactions?${query}`, {}, 'v4');
+  if (!response) throw new Error('Please log in to follow this profile.');
+  if (!response.ok) throw new Error(`Unable to load follow status: HTTP ${response.status}`);
+  const raw = (await response.json()) as unknown;
+  if (!Array.isArray(raw) || !raw.length) return null;
+  const first = raw[0] as Record<string, unknown>;
+  if (num(first.id) < 1 || num(first.target_post_id) !== postId || first.target_post_type !== postType) {
+    return null;
+  }
+  return { id: num(first.id), interaction_type: 'follow', target_post_type: postType, target_post_id: postId };
+}
+
+export async function followProfile(
+  postType: FollowMatch['target_post_type'],
+  postId: number
+): Promise<UserInteraction> {
+  const response = await authedFetch('/user-interactions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ interaction_type: 'follow', target_post_type: postType, target_post_id: postId })
+  }, 'v4');
+  if (!response?.ok) throw new Error('Could not follow this profile.');
+  const raw = (await response.json()) as Record<string, unknown>;
+  if (num(raw.id) < 1) throw new Error('Unexpected follow response.');
+  return { id: num(raw.id), interaction_type: 'follow', target_post_type: postType, target_post_id: postId };
+}
