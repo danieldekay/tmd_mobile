@@ -5,6 +5,8 @@
 	import { page } from '$app/stores';
 	import { get } from 'svelte/store';
 	import { getEvents } from '$lib/api/tmd';
+	import { initAuth, isAuthenticated } from '$lib/auth';
+	import { getFollowingEvents } from '$lib/api/personalization';
 	import type { TmdEventFilters, TmdEventSummary } from '$lib/types';
 	import SaveToggle from '$lib/components/SaveToggle.svelte';
 	import { incrementBrowseCount } from '$lib/pwa';
@@ -21,9 +23,14 @@
 	let filterDateAfter = $state('');
 	let filterDateBefore = $state('');
 	let filterRegState = $state<TmdEventFilters['registrationState']>('all');
+	let filterFollowing = $state(false);
+	let followingPage = $state(1);
+	let hasMoreFollowing = $state(false);
+	let followingReasons = $state<Record<number, string[]>>({});
 
 	// Derived: are any filters active?
 	const hasActiveFilters = $derived(
+		filterFollowing ||
 		filterCountry !== '' ||
 			filterCity !== '' ||
 			filterDateAfter !== '' ||
@@ -37,6 +44,7 @@
 	// ── URL sync helpers ───────────────────────────────────────────────────────
 	function readFiltersFromUrl(): void {
 		const params = get(page).url.searchParams;
+		filterFollowing = params.get('following') === '1';
 		filterCountry = params.get('country') ?? '';
 		filterCity = params.get('city') ?? '';
 		filterDateAfter = params.get('after') ?? '';
@@ -58,12 +66,14 @@
 
 	async function pushFiltersToUrl(): Promise<void> {
 		const url = new URL(get(page).url);
+		url.searchParams.delete('following');
 		url.searchParams.delete('country');
 		url.searchParams.delete('city');
 		url.searchParams.delete('after');
 		url.searchParams.delete('before');
 		url.searchParams.delete('reg');
 
+		if (filterFollowing) url.searchParams.set('following', '1');
 		if (filterCountry) url.searchParams.set('country', filterCountry);
 		if (filterCity) url.searchParams.set('city', filterCity);
 		if (filterDateAfter) url.searchParams.set('after', filterDateAfter);
@@ -85,7 +95,23 @@
 		errorMessage = null;
 		try {
 			const filters = buildFilterParams();
-			events = await getEvents(50, filters);
+			if (filterFollowing) {
+				await initAuth();
+				if (!isAuthenticated()) {
+					throw new Error('Log in to discover events featuring people you follow.');
+				}
+				const following = await getFollowingEvents(1, filters);
+				events = following.events;
+				followingPage = 1;
+				hasMoreFollowing = following.pages > 1;
+				followingReasons = Object.fromEntries(
+					following.events.map((event) => [event.id, event.matchedBy.map((reason) => reason.title).filter(Boolean)])
+				);
+			} else {
+				events = await getEvents(50, filters);
+				hasMoreFollowing = false;
+				followingReasons = {};
+			}
 			incrementBrowseCount();
 			// Derive available countries from the full unfiltered set when no country filter active
 			if (!filterCountry) {
@@ -100,6 +126,26 @@
 		}
 	}
 
+	async function loadMoreFollowing(): Promise<void> {
+		if (!filterFollowing || !hasMoreFollowing || isLoading) return;
+		isLoading = true;
+		try {
+			const pageNumber = followingPage + 1;
+			const next = await getFollowingEvents(pageNumber, buildFilterParams());
+			const existing = new Set(events.map((e) => e.id));
+			events = [...events, ...next.events.filter((e) => !existing.has(e.id))];
+			for (const event of next.events) {
+				followingReasons[event.id] = event.matchedBy.map((reason) => reason.title).filter(Boolean);
+			}
+			followingPage = pageNumber;
+			hasMoreFollowing = pageNumber < next.pages;
+		} catch (error) {
+			errorMessage = error instanceof Error ? error.message : 'Could not load additional followed events.';
+		} finally {
+			isLoading = false;
+		}
+	}
+
 	// ── Filter change handler ──────────────────────────────────────────────────
 	async function applyFilters(): Promise<void> {
 		await pushFiltersToUrl();
@@ -107,6 +153,7 @@
 	}
 
 	async function clearFilters(): Promise<void> {
+		filterFollowing = false;
 		filterCountry = '';
 		filterCity = '';
 		filterDateAfter = '';
@@ -167,6 +214,16 @@
 
 	<!-- Filter bar -->
 	<div class="panel p-4 space-y-3" aria-label="Filter events">
+		<div class="flex flex-wrap gap-2" role="group" aria-label="Event discovery mode">
+			<button type="button"
+				class="rounded-control px-3 py-2 text-sm font-semibold {filterFollowing ? 'bg-soft text-ink' : 'bg-primary text-white'}"
+				aria-pressed={!filterFollowing}
+				onclick={() => { filterFollowing = false; void applyFilters(); }}>All events</button>
+			<button type="button"
+				class="rounded-control px-3 py-2 text-sm font-semibold {filterFollowing ? 'bg-primary text-white' : 'bg-soft text-ink'}"
+				aria-pressed={filterFollowing}
+				onclick={() => { filterFollowing = true; void applyFilters(); }}>Featuring people I follow</button>
+		</div>
 		<div class="grid grid-cols-2 gap-2">
 			<!-- Country filter -->
 			<div>
@@ -285,6 +342,9 @@
 			<button class="button-secondary mt-4 text-sm" type="button" onclick={() => void loadEvents()}>
 				Try again
 			</button>
+			{#if filterFollowing}
+				<a class="button-secondary ml-2 mt-4 inline-flex text-sm" href={resolve('/login')}>Log in</a>
+			{/if}
 		</div>
 	{:else if events.length === 0 && hasActiveFilters}
 		<!-- Filtered-empty state -->
@@ -324,6 +384,9 @@
 						<p class="eyebrow">{formatEventDateRange(event)}</p>
 						<p class="mt-1 font-display text-xl font-bold text-ink">{event.title}</p>
 						<p class="mt-1 text-sm text-muted">{formatEventLocation(event)}</p>
+						{#if filterFollowing && followingReasons[event.id]?.length}
+							<p class="mt-1 text-xs text-muted">Featuring: {followingReasons[event.id].join(', ')}</p>
+						{/if}
 						{#if event.venue}
 							<p class="mt-0.5 text-sm text-muted">{event.venue}</p>
 						{/if}
@@ -341,6 +404,10 @@
 				</li>
 			{/each}
 		</ul>
+		{#if filterFollowing && hasMoreFollowing}
+			<button type="button" class="button-secondary mt-4 w-full" disabled={isLoading}
+				onclick={() => void loadMoreFollowing()}>Load more followed events</button>
+		{/if}
 	{/if}
 </section>
 

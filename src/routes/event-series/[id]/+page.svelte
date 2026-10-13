@@ -4,6 +4,7 @@
 	import { page } from '$app/state';
 	import { getEventSeries, TmdNotFoundError } from '$lib/api/tmd';
 	import type { TmdEventSeries } from '$lib/types';
+	import FollowToggle from '$lib/components/FollowToggle.svelte';
 
 	let series = $state<TmdEventSeries | null>(null);
 	let isLoading = $state(true);
@@ -130,6 +131,8 @@
 					</div>
 				{/if}
 			</div>
+
+			<div class="panel p-4"><FollowToggle id={series.id} targetType="tmd_event_series" name={series.title} /></div>
 
 			{#if upcomingEditions.length > 0}
 				<section class="panel p-5" aria-labelledby="upcoming-heading">

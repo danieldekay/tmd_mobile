@@ -4,6 +4,7 @@
 	import { page } from '$app/state';
 	import { getDj, TmdNotFoundError } from '$lib/api/tmd';
 	import type { TmdDjDetail } from '$lib/types';
+	import FollowToggle from '$lib/components/FollowToggle.svelte';
 
 	let dj = $state<TmdDjDetail | null>(null);
 	let isLoading = $state(true);
@@ -100,6 +101,8 @@
 					{/if}
 				</div>
 			</div>
+
+			<div class="panel p-4"><FollowToggle id={dj.id} targetType="tmd_dj" name={dj.title} /></div>
 
 			{#if dj.bio}
 				<section class="panel p-5" aria-labelledby="bio-heading">
