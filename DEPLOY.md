@@ -2,9 +2,9 @@
 
 ## Overview
 
-This repository is prepared for Cloudflare Worker Assets. It mirrors the RNT mobile deployment mechanism, but uses the Worker service name `tmd-mobile`.
+This repository uses Cloudflare Worker Assets. The production Worker is named `tmd-mobile`.
 
-The intended public route is:
+The intended production route is:
 
 ```text
 https://mobile.tangomarathons.com
@@ -12,10 +12,17 @@ https://mobile.tangomarathons.com
 
 This domain is not available in Cloudflare yet, so production routing is documented but not complete.
 
+## Branch Policy
+
+- `develop` is the testing branch. Pushes and pull requests targeting `develop` run CI checks and the production build; they do not deploy.
+- `main` is the production branch. Pushes to `main` deploy the `tmd-mobile` Worker.
+- Manual deploy runs are skipped unless the selected ref is `main`.
+
 ## Source Of Truth
 
 Deployment configuration lives in:
 
+- `.github/workflows/ci.yml`
 - `.github/workflows/deploy.yml`
 - `wrangler.toml`
 - `worker.ts`
@@ -77,6 +84,8 @@ Build output is written to `build/`.
 npm run build
 npx wrangler deploy --message "Manual deploy"
 ```
+
+The GitHub Actions manual deploy is restricted to `main`; use local manual deployment only when intentionally deploying production.
 
 ## Smoke Test After Deploy
 
