@@ -78,14 +78,11 @@ npm run build
 
 Build output is written to `build/`.
 
-## Manual Deploy
+## Production Deploy
 
-```bash
-npm run build
-npx wrangler deploy --message "Manual deploy"
-```
+Production deploys, including manual deploys, must use the GitHub Actions Deploy workflow with `main` selected. The workflow skips runs from other refs.
 
-The GitHub Actions manual deploy is restricted to `main`; use local manual deployment only when intentionally deploying production.
+Do not run `npx wrangler deploy` from a local checkout for production: Wrangler targets the production Worker directly and does not enforce the branch restriction.
 
 ## Smoke Test After Deploy
 
