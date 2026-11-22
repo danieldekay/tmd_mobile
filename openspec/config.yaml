@@ -8,8 +8,12 @@ context: |
   Architecture: routes in src/routes, API access in src/lib/api/tmd.ts, shared types in src/lib/types.ts
   Deployment: static SvelteKit build served by Cloudflare Worker Assets service tmd-mobile
   Domain note: mobile.tangomarathons.com is planned but not configured in Cloudflare yet
+  Workflow: use .agents/skills/openspec-* with AGENTS.md and docs/openspec-workflow.md.
+  Core owns domain/API/authorization contracts; Mobile owns consumption and PWA behavior.
+  Assess ../tmd_core and relevant ../tmd_theme parity; keep local work local and link shared changes.
 rules:
   proposal:
+    - "Record affected repos/contracts, coordinator, repo-qualified dependencies and issue/PR URLs; justify unaffected partners with source evidence."
     - State the user-visible outcome and affected routes or views.
     - Note API, data-shape, relationship, CORS, and deployment implications.
     - Mention whether a feature is public, authenticated, or admin-only.
@@ -19,6 +23,7 @@ rules:
     - Include mobile-first interaction behavior and accessibility expectations.
     - Reference TMD4 parity where it exists.
   design:
+    - "Include source-backed Architecture and pattern reuse, Security analysis, Error handling and recovery, Compatibility and rollout, and Verification sections using the Core review template; justify not-applicable decisions."
     - Reference concrete routes, modules, and data contracts.
     - Prefer TMD Core v3 REST first; introduce GraphQL only when it reduces overfetching or relationship complexity.
     - Preserve static compatibility unless a proposal explicitly changes deployment architecture.
@@ -30,8 +35,16 @@ rules:
     - Include API fixture validation when response normalization changes.
     - Refactoring tasks (splitting oversized files, reducing complexity) must appear before any new-feature tasks that touch the same files.
     - If any file involved in this change is already over ~500 lines, the first task must be to refactor it before adding new code.
-  code:
-    - Hard limit: no file may exceed ~500 lines. When a file would exceed this, extract cohesive logic into a new file before continuing.
-    - Refactor first, then extend. Never add new code to a file that already needs splitting.
-    - Keep cyclomatic complexity low. Extract complex conditionals, loops, and data transformations into clearly named helper functions.
-    - Prefer many small, single-responsibility files over few large general-purpose ones.
+operations:
+  apply:
+    guidance:
+      - "Hard limit: no file may exceed ~500 lines. When a file would exceed this, extract cohesive logic into a new file before continuing."
+      - Refactor first, then extend. Never add new code to a file that already needs splitting.
+      - Keep cyclomatic complexity low. Extract complex conditionals, loops, and data transformations into clearly named helper functions.
+      - Prefer many small, single-responsibility files over few large general-purpose ones.
+      - "Read docs/openspec-workflow.md, affected partner instructions/configs/specs, coordinator design and tasks. Require recorded architecture/reuse, security, error-handling and compatibility review, valid target specs and satisfied prerequisites before dependent edits."
+      - "Keep Core contracts authoritative and preserve unrelated work. Execute in dependency order, update artifacts when assumptions change and record local/combined verification and blockers; skipped checks remain unverified."
+  archive:
+    guidance:
+      - "Review coordinator verification.md and linked partner changes, validate each target strictly and reconcile implementation/specs plus rollout/rollback evidence."
+      - "Required partner/security/error/offline acceptance must be verified before initiative closure. Archive local deltas in each owning repo, repair links and record any partial or blocked state."

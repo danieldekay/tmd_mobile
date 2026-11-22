@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-10-17
+# Tooling/docs only; no application, API, permission or offline runtime behavior changes.
+skip_specs: true

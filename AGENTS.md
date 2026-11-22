@@ -2,6 +2,15 @@
 
 Instructions for AI agents working on the TMD Mobile app.
 
+## OpenSpec planning and execution
+
+- Use the Codex workflows in `.agents/skills/openspec-*` with `openspec/config.yaml` and [the mobile workflow](docs/openspec-workflow.md) for every change. Begin with `$openspec-propose` or `$openspec-explore`; follow apply, verify, sync and archive skills for the relevant phase.
+- Run repository OpenSpec commands through `npm run openspec -- <arguments>` after installing dependencies. Translate generated skills' bare `openspec` examples to this local npm script; a global CLI may differ from the locked project version.
+- Assess the actual Core contract and relevant theme parity before implementation. Core owns domain/data/API/server authorization; Mobile owns API consumption, PWA presentation, interaction and offline behavior.
+- Record architecture/pattern reuse, security, error handling, compatibility and verification analysis with source evidence or a justified not-applicable decision. Missing review evidence, invalid target specs or unresolved prerequisites block dependent implementation.
+- Keep mobile-only work local after recording partner impact. Shared changes require linked OpenSpec changes in affected repos, one coordinator, repo-qualified dependencies and ordered tasks; keep integration evidence in coordinator `verification.md`. Required partner acceptance blocks initiative closure.
+- Keep tracked GitHub issues and OpenSpec synchronized using explicit repository targets. Record skipped checks as unverified and preserve unrelated edits. CLI validation alone does not establish review completion.
+
 ## Project Overview
 
 TMD Mobile is a SvelteKit 5 + Svelte 5 TypeScript PWA for The Tango Marathon Directory. It uses TMD Core as the source of truth and aims for mobile feature parity with the public browsing functionality currently implemented in TMD4.
